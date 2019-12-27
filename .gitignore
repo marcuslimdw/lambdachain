@@ -1,0 +1,12 @@
+# IDE
+
+.idea/
+
+# Notebooks
+
+*.ipynb
+
+# Python bytecode
+
+__pycache__
+*.pyc
