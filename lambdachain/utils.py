@@ -1,5 +1,6 @@
 from inspect import isgenerator
 
+
 def assert_callable(f):
     """
     Raise a `TypeError` if an object is not callable.
@@ -10,12 +11,13 @@ def assert_callable(f):
     if not callable(f):
         raise TypeError(f'{f} is not callable')
 
-def assert_generator(g):
+
+def assert_genexpr(g):
     """
-    Raise a `TypeError` if an object is not a generator.
+    Raise a `TypeError` if an object is not a generator expression.
 
     Args:
-        f: The object to check.
+        g: The object to check.
     """
-    if not isgenerator(g):
-        raise TypeError(f'{g} is not a generator')
+    if g.__name__ != '<genexpr>':
+        raise TypeError(f'{g} is not a generator expression')

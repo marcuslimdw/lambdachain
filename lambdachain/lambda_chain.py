@@ -3,11 +3,11 @@ from __future__ import annotations
 from functools import reduce, partial
 from inspect import signature
 from itertools import filterfalse
-from typing import Generic, Iterable, Any, Callable, Union, Tuple, Generator
+from typing import Generic, Iterable, Any, Callable, Tuple, Generator, Union
 
 from lambdachain.functions import T, U, fold, unique, unique_by, rebind, foldc
-from lambdachain.lambda_identifier import LambdaIdentifier, Lambda as _
-from lambdachain.utils import assert_callable, assert_generator
+from lambdachain.lambda_identifier import Lambda as _, LambdaIdentifier
+from lambdachain.utils import assert_callable, assert_genexpr
 
 
 class LambdaChain(Generic[T]):
@@ -21,7 +21,7 @@ class LambdaChain(Generic[T]):
     # def map(self, f: Callable[[T], U]) -> LambdaChain[U]:
     def map(self, f):
         """
-        Applies a function to each element of the current iterable. Analogous to the builtin function `map`.
+        Apply a function to each element of the current iterable. Analogous to the builtin function `map`.
 
         Args:
             f: The function to apply.
@@ -35,7 +35,7 @@ class LambdaChain(Generic[T]):
     # def filter(self, f: Callable[[T], Any] = identity) -> LambdaChain[T]:
     def filter(self, f):
         """
-        Removes the elements of the current iterable that, when passed into a function, return a value that evaluates
+        Remove the elements of the current iterable that, when passed into a function, return a value that evaluates
         to `False`. Analogous to the builtin function `filter``.
 
         Args:
@@ -50,7 +50,7 @@ class LambdaChain(Generic[T]):
     # def reject(self, f: Callable[[T], Any] = identity) -> LambdaChain[T]:
     def reject(self, f):
         """
-        Removes the elements of the current iterable that, when passed into a function, return a value that evaluates
+        Remove the elements of the current iterable that, when passed into a function, return a value that evaluates
         to `True`. Analogous to `itertools.filterfalse`.
 
         Args:
@@ -65,7 +65,7 @@ class LambdaChain(Generic[T]):
     # def fold(self, f: Callable[[U, T], U], initial_value: U) -> U:
     def fold(self, f, initial_value):
         """
-        Applies a function to an accumulator and successive values of the current iterable, with the accumulator
+        Apply a function to an accumulator and successive values of the current iterable, with the accumulator
         storing the value of each application, until the iterable is exhausted. The accumulator is initialised with a
         given value. Analogous to `functools.reduce`.
 
@@ -88,7 +88,7 @@ class LambdaChain(Generic[T]):
     # def foldc(self, f: Callable[[U], Callable[[T], U]]) -> Callable[[U], U]:
     def foldc(self, f):
         """
-        Applies a function to an accumulator and successive values of the current iterable, with the accumulator
+        Apply a function to an accumulator and successive values of the current iterable, with the accumulator
         storing the value of each application, until the iterable is exhausted. The accumulator is initialised with a
         given value. Analogous to `functools.reduce`.
 
@@ -110,7 +110,7 @@ class LambdaChain(Generic[T]):
 
     def unique(self, ordered: bool = False) -> LambdaChain[T]:
         """
-        Removes repeated elements from the current iterable. If `ordered = True`, the unique elements in the result
+        Remove repeated elements from the current iterable. If `ordered = True`, the unique elements in the result
         be in the same order as when they first appeared in the original iterable.
 
         Args:
@@ -123,7 +123,7 @@ class LambdaChain(Generic[T]):
 
     def unique_by(self, key: Callable[[T], Any], ordered: bool = False) -> LambdaChain[T]:
         """
-        Removes elements from the current iterable that compare equal after having `key` applied to them. If
+        Remove elements from the current iterable that compare equal after having `key` applied to them. If
         `ordered = True`, the unique elements in the result will be in the same order as when they first appeared in
         the original iterable.
 
@@ -178,11 +178,32 @@ class LambdaChain(Generic[T]):
         # case (being able to specify "lambda" generator expressions in this method, that shouldn't matter. There is a
         # fair bit of (CPython-dependent) magic here, all in the name of nice-looking syntax. I hope it's worth it.
 
-        assert_generator(g)
+        assert_genexpr(g)
         rebind(g, self._it)
         return LambdaChain(g)
 
+    def persist(self, f):
+        """
+        Apply a function to the current iterable.
+
+        Args:
+            f:
+
+        Returns:
+            A
+        """
+        return LambdaChain(f(self._it))
+
     def force(self, f):
+        """
+
+
+        Args:
+            f:
+
+        Returns:
+
+        """
         return f(self._it)
 
 

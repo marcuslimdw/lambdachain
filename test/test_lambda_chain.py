@@ -4,7 +4,7 @@ from operator import add
 
 import pytest
 
-from lambdachain.lambda_chain import LambdaChain, curry, uncurry
+from lambdachain.lambda_chain import LambdaChain, uncurry, curry
 from lambdachain.lambda_identifier import Lambda as _
 
 
