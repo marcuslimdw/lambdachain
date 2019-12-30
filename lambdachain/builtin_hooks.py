@@ -9,22 +9,22 @@ _old_isinstance = isinstance
 
 # noinspection PyShadowingBuiltins
 def bool(x):
-    return _old_bool if isinstance(x, LambdaIdentifier) else _old_bool(x)
+    return LambdaIdentifier(_old_bool) if isinstance(x, LambdaIdentifier) else _old_bool(x)
 
 
 # noinspection PyShadowingBuiltins
 def int(x):
-    return _old_int if isinstance(x, LambdaIdentifier) else _old_int(x)
+    return LambdaIdentifier(_old_int) if isinstance(x, LambdaIdentifier) else _old_int(x)
 
 
 # noinspection PyShadowingBuiltins
 def float(x):
-    return _old_float if isinstance(x, LambdaIdentifier) else _old_float(x)
+    return LambdaIdentifier(_old_float) if isinstance(x, LambdaIdentifier) else _old_float(x)
 
 
 # noinspection PyShadowingBuiltins
 def str(x):
-    return _old_str if isinstance(x, LambdaIdentifier) else _old_str(x)
+    return LambdaIdentifier(_old_str) if isinstance(x, LambdaIdentifier) else _old_str(x)
 
 
 NEW_TYPE_MAP = {
