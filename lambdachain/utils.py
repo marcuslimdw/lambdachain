@@ -1,6 +1,3 @@
-from inspect import isgenerator
-
-
 def assert_callable(f):
     """
     Raise a `TypeError` if an object is not callable.
