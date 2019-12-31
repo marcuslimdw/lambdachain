@@ -1,6 +1,6 @@
 import pytest
 
-from lambdachain.builtin_hooks import bool, int, float, str
+from lambdachain.builtin_hooks import bool, int, float, str, len
 from lambdachain.lambda_identifier import Lambda as _
 
 
@@ -42,7 +42,8 @@ def test_str(f, data, expected):
 
 @pytest.mark.parametrize(['f', 'data', 'expected'], [(str(_) + 'b', 'a', 'ab'),
                                                      (float(_) + 3, '12', 15.0),
-                                                     (~bool(_), [], True)])
+                                                     (~bool(_), [], True),
+                                                     (len(_) * 2, [1, 2, 3], 6)])
 def test_as_lambda_identifiers(f, data, expected):
     result = f(data)
     assert f(data) == expected and type(result) == type(expected)

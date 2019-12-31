@@ -5,6 +5,7 @@ _old_int = int
 _old_float = float
 _old_str = str
 _old_isinstance = isinstance
+_old_len = len
 
 
 # noinspection PyShadowingBuiltins
@@ -33,6 +34,11 @@ NEW_TYPE_MAP = {
     float: _old_float,
     str: _old_str
 }
+
+
+# noinspection PyShadowingBuiltins
+def len(x):
+    return LambdaIdentifier(_old_len) if isinstance(x, LambdaIdentifier) else _old_len(x)
 
 
 # noinspection PyShadowingBuiltins
