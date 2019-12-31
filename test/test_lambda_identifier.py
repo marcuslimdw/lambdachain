@@ -1,86 +1,42 @@
-from operator import add, sub, mod, eq
+from operator import add, sub, mul, truediv, floordiv, mod, eq, gt, ge, lt, le, ne
 
 import pytest
 
 from lambdachain.lambda_identifier import Lambda as _
 
-ARITHMETIC_PARAMETERS = [0, 1, -3.0, 'value', [1], True, None]
+ARITHMETIC_PARAMETERS = [0, 1, -3.0, 'value%s', [], True, None]
+ARITHMETIC_OPERATORS = [add, sub, mul, truediv, floordiv, mod]
+COMPARISON_OPERATORS = [eq, gt, ge, lt, le, ne]
 
 
+@pytest.mark.parametrize('forward', {True, False})
+@pytest.mark.parametrize('op', ARITHMETIC_OPERATORS)
 @pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
-def test_add(data):
-    f = (_ + data)
+def test_arithmetic_operators(forward, op, data):
+    f = op(_, data) if forward else op(data, _)
     try:
-        expected = 1 + data
-        assert f(1) == expected
+        expected = op(3, data) if forward else op(data, 3)
+        assert f(3) == expected
 
     except AssertionError:
         raise
 
     except Exception as e:
         with pytest.raises(e.__class__):
-            f(1)
-
-
-@pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
-def test_radd(data):
-    f = (data + _)
-    try:
-        expected = data + 1
-        assert f(1) == expected
-
-    except AssertionError:
-        raise
-
-    except Exception as e:
-        with pytest.raises(e.__class__):
-            f(1)
-
-
-@pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
-def test_sub(data):
-    f = (_ - data)
-    try:
-        expected = 1 - data
-        assert f(1) == expected
-
-    except AssertionError:
-        raise
-
-    except Exception as e:
-        with pytest.raises(e.__class__):
-            f(1)
-
-
-@pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
-def test_rsub(data):
-    f = (data - _)
-    try:
-        expected = data - 1
-        assert f(1) == expected
-
-    except AssertionError:
-        raise
-
-    except Exception as e:
-        with pytest.raises(e.__class__):
-            f(1)
+            f(3)
 
 
 @pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
-def test_eq(a, b):
-    f = (_ == _)
-    expected = (a == b)
-    # noinspection PyCallingNonCallable
-    assert f(a)(b) == expected
+@pytest.mark.parametrize('op', [eq, gt, ge, lt, le, ne])
+def test_comparison_operators(a, b, op):
+    f = op(_, _)
+    try:
+        expected = op(a, b)
+        assert f(a)(b) == expected
 
-
-@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
-def test_ne(a, b):
-    f = (_ != _)
-    expected = (a != b)
-    # noinspection PyCallingNonCallable
-    assert f(a)(b) == expected
+    except Exception as e:
+        with pytest.raises(e.__class__):
+            f(a)(b)
 
 
 @pytest.mark.parametrize('data', [2, 'abc'])
@@ -90,7 +46,7 @@ def test_getattr(data):
         expected = data.real
         assert f(data) == expected
 
-    except Exception as e:
+    except Exception:
         with pytest.raises(ValueError):
             f(data)
 
@@ -102,7 +58,7 @@ def test_getattr_call(data):
         expected = data.upper()
         assert f(data) == expected
 
-    except Exception as e:
+    except Exception:
         with pytest.raises(ValueError):
             f(data)
 
@@ -137,3 +93,45 @@ def test_rdouble(op, a, b):
     except Exception as e:
         with pytest.raises(e.__class__):
             f(b)(a)
+
+
+@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
+def test_and(a, b):
+    f = _ & _
+    assert f(a)(b) == (a and b)
+
+
+@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
+def test_or(a, b):
+    f = _ | _
+    assert f(a)(b) == (a or b)
+
+
+@pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
+def test_not(data):
+    f = ~_
+    assert f(data) == (not data)
+
+
+def test_bool_conversion_fail():
+    with pytest.raises(ValueError):
+        assert _ and _
+
+    with pytest.raises(ValueError):
+        assert _ or _
+
+    with pytest.raises(ValueError):
+        assert not _
+
+
+@pytest.mark.xfail
+def test_chained_bool():
+    f = _ & _ | _ & _
+    assert not f(True)(True)(False)(False)
+    assert f(True)(True)(False)(True)
+
+
+@pytest.mark.xfail
+def test_combined_filter():
+    f = (_ % 2 == 0) & (_ > 5)
+    assert list(filter(f, range(9))) == [6, 8]

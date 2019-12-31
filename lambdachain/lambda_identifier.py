@@ -23,6 +23,24 @@ class LambdaIdentifier:
     def __rsub__(self, other):
         return LambdaIdentifier(lambda x: other - self._f(x))
 
+    def __mul__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) * other)
+
+    def __rmul__(self, other):
+        return LambdaIdentifier(lambda x: other * self._f(x))
+
+    def __truediv__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) / other)
+
+    def __rtruediv__(self, other):
+        return LambdaIdentifier(lambda x: other / self._f(x))
+
+    def __floordiv__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) // other)
+
+    def __rfloordiv__(self, other):
+        return LambdaIdentifier(lambda x: other // self._f(x))
+
     def __mod__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) % other)
 
@@ -32,8 +50,51 @@ class LambdaIdentifier:
     def __eq__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) == other)
 
+    def __ge__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) >= other)
+
+    def __gt__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) > other)
+
+    def __le__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) <= other)
+
+    def __lt__(self, other):
+        return LambdaIdentifier(lambda x: self._f(x) < other)
+
     def __ne__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) != other)
+
+    def __bool__(self):
+        raise ValueError("A LambdaIdentifier cannot be converted to a bool; if you wish to apply boolean operators in "
+                         "a lambda expression, use '&' for 'and', '|' for 'or' and '~' for 'not' instead")
+
+    # TODO: Think about how to support chaining boolean operators
+
+    # noinspection PyPep8
+    def __and__(self, other):
+        if isinstance(other, LambdaIdentifier):
+            f = lambda x: lambda y: self._f(x) and other(y)
+
+        else:
+            # To take advantage of short-circuit efficiency
+            f = lambda x: other and self._f(x)
+
+        return LambdaIdentifier(f)
+
+    # noinspection PyPep8
+    def __or__(self, other):
+        if isinstance(other, LambdaIdentifier):
+            f = lambda x: lambda y: self._f(x) or other(y)
+
+        else:
+            # To take advantage of short-circuit efficiency
+            f = lambda x: other and self._f(x)
+
+        return LambdaIdentifier(f)
+
+    def __invert__(self):
+        return LambdaIdentifier(lambda x: not self._f(x))
 
     def __getattr__(self, attr):
         return GetattrProxy(self._f, attr)
@@ -49,7 +110,7 @@ class GetattrProxy(LambdaIdentifier):
         super().__init__(f)
 
     def __matmul__(self, args):
-        # As it stands there is no apparent way to distinguish between a GetattrProxy that is being called on an
+        # As it stands, there is no apparent way to distinguish between a GetattrProxy that is being called on an
         # object to access an attribute, and one that is being called to construct a GetattrCallProxy. Accordingly,
         # since matrix multiplication is only used in NumPy (that I know of), which probably would have little use for
         # such lambdas, this operator has been repurposed for the specific case of binding arguments to a GetattrProxy
@@ -89,7 +150,9 @@ class GetattrCallProxy(GetattrProxy):
         arg_or_args = self._arg_or_args
         call = super().__call__(obj)
         try:
-            return call(*arg_or_args)
+            # To distinguish a TypeError raised by the function itself from one arising from splat failure
+            args = iter(arg_or_args)
+            return call(*args)
 
         except TypeError:
             return call(arg_or_args)
