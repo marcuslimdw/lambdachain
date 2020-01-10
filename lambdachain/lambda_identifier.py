@@ -69,7 +69,7 @@ class LambdaIdentifier:
         raise ValueError("A LambdaIdentifier cannot be converted to a bool; if you wish to apply boolean operators in "
                          "a lambda expression, use '&' for 'and', '|' for 'or' and '~' for 'not' instead")
 
-    # TODO: Think about how to support chaining boolean operators
+    # TODO: Think about how to support chaining boolean operators.
 
     # noinspection PyPep8
     def __and__(self, other):

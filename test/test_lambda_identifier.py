@@ -52,6 +52,11 @@ def test_getattr(data):
             f(data)
 
 
+def test_getattr_mistake():
+    with pytest.raises(ValueError):
+        f = _.join('a', 'b', 'c')
+
+
 @pytest.mark.parametrize(['data', 'f', 'expected'], [('abc', _.upper @ (), 'ABC'),
                                                      ('hello', _.count @ 'l', 2),
                                                      (',', _.join @ ('1', '2', '3'), '1,2,3')])

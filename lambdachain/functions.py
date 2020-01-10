@@ -66,12 +66,8 @@ def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[
 
 
 def enumerate_(it: Iterable[T], start: int, step: int) -> Iterable[Tuple[T, int]]:
-    if step not in frozenset({0, 1}):
-        return zip(it, count(start, step))
-
-    elif step == 1:
+    if step == 1:
         return enumerate(it, start)
 
     else:
-        raise ValueError(f"'step' cannot be 0")
-
+        return zip(count(start, step), it)
