@@ -1,4 +1,5 @@
 from operator import add, sub, mul, truediv, floordiv, mod, eq, gt, ge, lt, le, ne
+from typing import Callable
 
 import pytest
 
@@ -51,15 +52,15 @@ def test_getattr(data):
             f(data)
 
 
-@pytest.mark.parametrize('data', [2, 'abc'])
-def test_getattr_call(data):
-    f = _.upper @ ()
+@pytest.mark.parametrize(['data', 'f', 'expected'], [('abc', _.upper @ (), 'ABC'),
+                                                     ('hello', _.count @ 'l', 2),
+                                                     (',', _.join @ ('1', '2', '3'), '1,2,3')])
+def test_getattr_call(data, f: Callable, expected):
     try:
-        expected = data.upper()
         assert f(data) == expected
 
-    except Exception:
-        with pytest.raises(ValueError):
+    except Exception as e:
+        with pytest.raises(e.__class__):
             f(data)
 
 
