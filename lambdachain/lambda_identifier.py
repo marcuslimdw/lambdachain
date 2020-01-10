@@ -9,7 +9,7 @@ class LambdaIdentifier:
         self._f = f
 
     def __iter__(self):
-        return iter([])
+        return iter(())
 
     def __add__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) + other)
