@@ -1,6 +1,6 @@
 import pytest
 
-from lambdachain.builtin_hooks import bool, int, float, str, len
+from lambdachain.builtin_hooks import bool, int, float, str, len, isinstance
 from lambdachain.lambda_identifier import Lambda as _
 
 
@@ -47,3 +47,19 @@ def test_str(f, data, expected):
 def test_as_lambda_identifiers(f, data, expected):
     result = f(data)
     assert f(data) == expected and type(result) == type(expected)
+
+
+@pytest.mark.parametrize(['data', 'types', 'expected'], [(1, int, True),
+                                                         (1, (int, float), True),
+                                                         ('a', (int, float), False)])
+def test_isinstance(data, types, expected):
+    assert isinstance(data, types) == expected
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize(['data', 'expected'], [(True, bool),
+                                               (2, int),
+                                               (3.0, float),
+                                               ('a', str)])
+def test_type_comparison(data, expected):
+    assert type(data) == expected

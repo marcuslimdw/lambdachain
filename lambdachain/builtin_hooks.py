@@ -50,4 +50,7 @@ def isinstance(obj, types):
         return _old_isinstance(obj, NEW_TYPE_MAP.get(types, types))
 
 
+# TODO: Think about whether raw type comparisons with `type` can be made to work.
+
+
 __all__ = ['bool', 'int', 'float', 'str', 'isinstance']
