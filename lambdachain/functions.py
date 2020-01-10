@@ -1,5 +1,7 @@
+from itertools import groupby as groupby, count
+from collections import defaultdict
 from functools import reduce
-from typing import TypeVar, Iterable, Callable, Any, Generator
+from typing import TypeVar, Iterable, Callable, Any, Generator, Tuple
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -31,7 +33,7 @@ def rebind(g: Generator[T, None, None], new_source: Iterable):
         raise NotImplementedError('Rebinding generators is only supported on CPython')
 
 
-def unique(it: Iterable[T], ordered: bool = True) -> Iterable[T]:
+def unique(it: Iterable[T], ordered: bool) -> Iterable[T]:
     if ordered:
         yield from {k: None for k in it}
 
@@ -39,17 +41,37 @@ def unique(it: Iterable[T], ordered: bool = True) -> Iterable[T]:
         yield from set(it)
 
 
-def unique_by(it: Iterable[T], key: Callable[[T], Any], ordered: bool = True) -> Iterable[T]:
-    if ordered:
-        uniques = set()
-        result = []
-        for v in it:
-            k = key(v)
-            if k not in uniques:
-                uniques.add(k)
-                result.append(v)
+def unique_by(it: Iterable[T], key: Callable[[T], Any]) -> Iterable[T]:
+    uniques = set()
+    result = []
+    for v in it:
+        k = key(v)
+        if k not in uniques:
+            uniques.add(k)
+            result.append(v)
 
-        yield from result
+    yield from result
+
+
+def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
+    if combine:
+        d = defaultdict(list)
+        for v in it:
+            d[key(v)].append(v)
+
+        yield from d.items()
 
     else:
-        yield from {key(v): v for v in it}.values()
+        yield from ((k, list(g)) for k, g in groupby(it, key))
+
+
+def enumerate_(it: Iterable[T], start: int, step: int) -> Iterable[Tuple[T, int]]:
+    if step not in frozenset({0, 1}):
+        return zip(it, count(start, step))
+
+    elif step == 1:
+        return enumerate(it, start)
+
+    else:
+        raise ValueError(f"'step' cannot be 0")
+
