@@ -1,7 +1,7 @@
 from itertools import groupby as groupby, count
 from collections import defaultdict
 from functools import reduce
-from typing import TypeVar, Iterable, Callable, Any, Generator, Tuple
+from typing import TypeVar, Iterable, Callable, Any, Generator, Tuple, Hashable
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -33,6 +33,9 @@ def rebind(g: Generator[T, None, None], new_source: Iterable):
         raise NotImplementedError('Rebinding generators is only supported on CPython')
 
 
+# TODO: Support unique and unique_by for unhashable items
+
+
 def unique(it: Iterable[T], ordered: bool) -> Iterable[T]:
     if ordered:
         yield from {k: None for k in it}
@@ -41,7 +44,7 @@ def unique(it: Iterable[T], ordered: bool) -> Iterable[T]:
         yield from set(it)
 
 
-def unique_by(it: Iterable[T], key: Callable[[T], Any]) -> Iterable[T]:
+def unique_by(it: Iterable[T], key: Callable[[T], Hashable]) -> Iterable[T]:
     uniques = set()
     result = []
     for v in it:
