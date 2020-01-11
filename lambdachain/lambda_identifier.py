@@ -73,25 +73,15 @@ class LambdaIdentifier:
 
     # noinspection PyPep8
     def __and__(self, other):
-        if isinstance(other, LambdaIdentifier):
-            f = lambda x: lambda y: self._f(x) and other(y)
-
-        else:
-            # To take advantage of short-circuit efficiency
-            f = lambda x: other and self._f(x)
-
-        return LambdaIdentifier(f)
+        return LambdaIdentifier(lambda x: lambda y: self._f(x) and other(y)
+                                if isinstance(other, LambdaIdentifier)
+                                else lambda x: other and self._f(x))
 
     # noinspection PyPep8
     def __or__(self, other):
-        if isinstance(other, LambdaIdentifier):
-            f = lambda x: lambda y: self._f(x) or other(y)
-
-        else:
-            # To take advantage of short-circuit efficiency
-            f = lambda x: other and self._f(x)
-
-        return LambdaIdentifier(f)
+        return LambdaIdentifier(lambda x: lambda y: self._f(x) or other(y)
+                                if isinstance(other, LambdaIdentifier)
+                                else lambda x: other or self._f(x))
 
     def __invert__(self):
         return LambdaIdentifier(lambda x: not self._f(x))
