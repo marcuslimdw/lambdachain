@@ -1,3 +1,10 @@
+from sys import version_info
+
+_major, _minor, *_ = version_info
+PY37 = (_major >= 3) and (_minor >= 7)
+PY38 = (_major >= 3) and (_minor >= 8)
+
+
 def assert_callable(f):
     """
     Raise a `TypeError` if an object is not callable.
