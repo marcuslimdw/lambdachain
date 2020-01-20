@@ -5,6 +5,8 @@ from lambdachain.functions import identity
 
 class LambdaIdentifier:
 
+    __slots__ = ['_f']
+
     def __init__(self, f: Callable):
         self._f = f
 
@@ -47,6 +49,12 @@ class LambdaIdentifier:
     def __rmod__(self, other):
         return LambdaIdentifier(lambda x: other % self._f(x))
 
+    def __pow__(self, power, modulo=None):
+        return LambdaIdentifier(lambda x: pow(self._f(x) ** power, modulo))
+
+    def __rpow__(self, other):
+        return LambdaIdentifier(lambda x: other ** self._f(x))
+
     def __eq__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) == other)
 
@@ -65,6 +73,9 @@ class LambdaIdentifier:
     def __ne__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) != other)
 
+    def __getitem__(self, item):
+        return LambdaIdentifier(lambda x: self._f(x)[item])
+
     def __bool__(self):
         raise ValueError("A LambdaIdentifier cannot be converted to a bool; if you wish to apply boolean operators in "
                          "a lambda expression, use '&' for 'and', '|' for 'or' and '~' for 'not' instead")
@@ -75,13 +86,13 @@ class LambdaIdentifier:
     def __and__(self, other):
         return LambdaIdentifier(lambda x: lambda y: self._f(x) and other(y)
                                 if isinstance(other, LambdaIdentifier)
-                                else lambda x: other and self._f(x))
+                                else lambda z: other and self._f(z))
 
     # noinspection PyPep8
     def __or__(self, other):
         return LambdaIdentifier(lambda x: lambda y: self._f(x) or other(y)
                                 if isinstance(other, LambdaIdentifier)
-                                else lambda x: other or self._f(x))
+                                else lambda z: other or self._f(z))
 
     def __invert__(self):
         return LambdaIdentifier(lambda x: not self._f(x))
