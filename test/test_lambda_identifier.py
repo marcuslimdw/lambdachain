@@ -6,7 +6,7 @@ import pytest
 from lambdachain.lambda_identifier import Lambda as _
 
 ARITHMETIC_PARAMETERS = [0, 1, -3.0, 'value%s', [], True, None]
-ARITHMETIC_OPERATORS = [add, sub, mul, truediv, floordiv, mod]
+ARITHMETIC_OPERATORS = [add, sub, mul, truediv, floordiv, mod, pow]
 COMPARISON_OPERATORS = [eq, gt, ge, lt, le, ne]
 
 
@@ -40,6 +40,12 @@ def test_comparison_operators(a, b, op):
             f(a)(b)
 
 
+@pytest.mark.parametrize(['data', 'key', 'expected'], [('cake', 2, 'k')])
+def test_getitem(data, key, expected):
+    f = _[key]
+    assert f(data) == expected
+
+
 @pytest.mark.parametrize('data', [2, 'abc'])
 def test_getattr(data):
     f = _.real
@@ -54,12 +60,14 @@ def test_getattr(data):
 
 def test_getattr_mistake():
     with pytest.raises(ValueError):
-        f = _.join('a', 'b', 'c')
+        _.join('a', 'b', 'c')
 
 
-@pytest.mark.parametrize(['data', 'f', 'expected'], [('abc', _.upper @ (), 'ABC'),
-                                                     ('hello', _.count @ 'l', 2),
-                                                     (',', _.join @ ('1', '2', '3'), '1,2,3')])
+@pytest.mark.parametrize(['data', 'f', 'expected'],
+                         [('abc', _.upper @ (), 'ABC'),
+                          ('hello', _.count @ 'l', 2),
+                          (',', _.join @ ('1', '2', '3'), '1,2,3')
+                          ])
 def test_getattr_call(data, f: Callable, expected):
     try:
         assert f(data) == expected

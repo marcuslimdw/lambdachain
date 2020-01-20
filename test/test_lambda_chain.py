@@ -13,20 +13,17 @@ def test_iter():
     assert list(LambdaChain((1, 2, 3))) == [1, 2, 3]
 
 
-@pytest.mark.parametrize(['data', 'f', 'expected'],
-                         [(range(-5, 5, 3), _ + 1, [-4, -1, 2, 5])])
+@pytest.mark.parametrize(['data', 'f', 'expected'], [(range(-5, 5, 3), _ + 1, [-4, -1, 2, 5])])
 def test_map(data, f, expected):
     assert LambdaChain(data).map(f).force() == expected
 
 
-@pytest.mark.parametrize(['data', 'f', 'expected'],
-                         [(range(-5, 5), _ % 2 == 0, [-4, -2, 0, 2, 4])])
+@pytest.mark.parametrize(['data', 'f', 'expected'], [(range(-5, 5), _ % 2 == 0, [-4, -2, 0, 2, 4])])
 def test_filter(data, f, expected):
     assert LambdaChain(data).filter(_ % 2 == 0).force() == expected
 
 
-@pytest.mark.parametrize(['data', 'f', 'expected'],
-                         [(range(-5, 5), _ % 2 == 0, [-5, -3, -1, 1, 3])])
+@pytest.mark.parametrize(['data', 'f', 'expected'], [(range(-5, 5), _ % 2 == 0, [-5, -3, -1, 1, 3])])
 def test_reject(data, f, expected):
     assert LambdaChain(data).reject(_ % 2 == 0).force() == expected
 
@@ -36,15 +33,17 @@ def test_reject(data, f, expected):
 def test_folds(data, initial_value, f):
     chain = LambdaChain(data).persist()
     f_curried = curry(f)
-    fold_result =  chain.fold(f, initial_value)
-    foldc_result = chain.foldc(f_curried)(initial_value)
+    fold_result = chain.force.fold(f, initial_value)
+    foldc_result = chain.force.foldc(f_curried)(initial_value)
     expected = reduce(f, data, initial_value)
     assert fold_result == foldc_result == expected
 
 
 @pytest.mark.parametrize(['data', 'ordered', 'expected'],
                          [([3, 0, 5, 7, 0, 4, 3, 4], False, [0, 3, 4, 5, 7]),
-                          ([3, 0, 5, 7, 0, 4, 3, 4], True, [3, 0, 5, 7, 4])])
+                          ([3, 0, 5, 7, 0, 4, 3, 4], True, [3, 0, 5, 7, 4]),
+                          pytest.param([[0], [2], [0], [1], [2], [0]], True, [[0], [2], [1]], marks=pytest.mark.xfail)
+                          ])
 def test_unique(data, ordered, expected):
     result = LambdaChain(data).unique(ordered)
     if ordered:
@@ -56,13 +55,20 @@ def test_unique(data, ordered, expected):
 
 @pytest.mark.parametrize(['data', 'f', 'expected'],
                          [([3, 0, 5, 7, 0, 4, 3, 4], _ % 3, [3, 5, 7]),
-                          (['apple', 'scream', 'white', 'bay', 'pea'], len, ['apple', 'scream', 'bay'])])
+                          (['apple', 'scream', 'white', 'bay', 'pea'], len, ['apple', 'scream', 'bay']),
+                          pytest.param([[0, 1], [0, 2], [2, 0], [1, 1], [2, 1], [1, 0], [0, 1]],
+                                       _[0],
+                                       [[0, 1], [2, 0], [1, 1]],
+                                       marks=pytest.mark.xfail)
+                          ])
 def test_unique_by(data, expected, f):
     assert LambdaChain(data).unique_by(f).force() == expected
 
 
-@pytest.mark.parametrize(['data', 'zip_data', 'expected'], [(['alpha', 'bravo', 'charlie'], [True, True, False],
-                                                             [('alpha', True), ('bravo', True), ('charlie', False)])])
+@pytest.mark.parametrize(['data', 'zip_data', 'expected'],
+                         [(['alpha', 'bravo', 'charlie'], [True, True, False],
+                           [('alpha', True), ('bravo', True), ('charlie', False)])
+                          ])
 def test_zip(data, zip_data, expected):
     assert LambdaChain(data).zip(zip_data).force() == expected
 
@@ -103,10 +109,12 @@ def test_force():
     assert LambdaChain((1, 2, 3)).force() == [1, 2, 3]
 
 
-@pytest.mark.parametrize(['f', 'data'], [(lambda: 1, ()),
-                                         (lambda x: x + 2, (1,)),
-                                         (lambda x, y: x / y, (3, 7)),
-                                         (lambda x, y, z: str(x % y) + z, (8, 5, '8'))])
+@pytest.mark.parametrize(['f', 'data'],
+                         [(lambda: 1, ()),
+                          (lambda x: x + 2, (1,)),
+                          (lambda x, y: x / y, (3, 7)),
+                          (lambda x, y, z: str(x % y) + z, (8, 5, '8'))
+                          ])
 def test_curry(f, data):
     if len(data) == 0:
         assert curry(f) == f
@@ -115,10 +123,12 @@ def test_curry(f, data):
         assert reduce(lambda next_f, arg: next_f(arg), data, curry(f)) == f(*data)
 
 
-@pytest.mark.parametrize(['f', 'data'], [(lambda: 1, ()),
-                                         (lambda x: x + 2, (1,)),
-                                         (lambda x: lambda y: x / y, (3, 7)),
-                                         (lambda x: lambda y: lambda z: str(x % y) + z, (8, 5, '8'))])
+@pytest.mark.parametrize(['f', 'data'],
+                         [(lambda: 1, ()),
+                          (lambda x: x + 2, (1,)),
+                          (lambda x: lambda y: x / y, (3, 7)),
+                          (lambda x: lambda y: lambda z: str(x % y) + z, (8, 5, '8'))
+                          ])
 def test_uncurry(f, data):
     if len(data) == 0:
         assert uncurry(f) == f

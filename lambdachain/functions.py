@@ -33,7 +33,7 @@ def rebind(g: Generator[T, None, None], new_source: Iterable):
         raise NotImplementedError('Rebinding generators is only supported on CPython')
 
 
-# TODO: Support unique and unique_by for unhashable items
+# TODO: Support unique and unique_by for unhashable items.
 
 
 def unique(it: Iterable[T], ordered: bool) -> Iterable[T]:
