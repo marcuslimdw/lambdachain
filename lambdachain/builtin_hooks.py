@@ -1,4 +1,7 @@
+from typing import Type, Tuple, Union, Any, Dict
+
 from lambdachain.lambda_identifier import LambdaIdentifier
+from lambdachain.utils import PY38
 
 _old_bool = bool
 _old_int = int
@@ -6,6 +9,7 @@ _old_float = float
 _old_str = str
 _old_isinstance = isinstance
 _old_len = len
+_old_type = type
 
 
 # noinspection PyShadowingBuiltins
@@ -28,7 +32,7 @@ def str(x):
     return LambdaIdentifier(_old_str) if isinstance(x, LambdaIdentifier) else _old_str(x)
 
 
-NEW_TYPE_MAP = {
+_NEW_TYPE_MAP = {
     bool: _old_bool,
     int: _old_int,
     float: _old_float,
@@ -44,13 +48,43 @@ def len(x):
 # noinspection PyShadowingBuiltins
 def isinstance(obj, types):
     if _old_isinstance(types, tuple):
-        return _old_isinstance(obj, tuple(NEW_TYPE_MAP[type] for type in types if type in NEW_TYPE_MAP))
+        return _old_isinstance(obj, tuple(_NEW_TYPE_MAP[t] for t in types if t in _NEW_TYPE_MAP))
 
     else:
-        return _old_isinstance(obj, NEW_TYPE_MAP.get(types, types))
+        return _old_isinstance(obj, _NEW_TYPE_MAP.get(types, types))
 
 
-# TODO: Think about whether raw type comparisons with `type` can be made to work.
+def _type(object_or_name, bases: Union[None, Tuple[Type]] = None, attr_dict: Union[None, Dict[str, Any]] = None):
+    if isinstance(object_or_name, LambdaIdentifier):
+        return LambdaIdentifier(lambda x: type(x))
+
+    elif bases is None and attr_dict is None:
+        type_result = _old_type(object_or_name)
+        return _NEW_TYPE_MAP.get(type_result, type_result)
+
+    elif bases is not None and attr_dict is not None:
+        return _old_type(object_or_name, bases, attr_dict)
+
+    elif bases is attr_dict is None:
+        pass
+
+    else:
+        return _old_type(None, None)
 
 
-__all__ = ['bool', 'int', 'float', 'str', 'isinstance']
+if PY38:
+
+    # This is, unfortunately, a SyntaxError in earlier versions...
+
+    exec('''def type(object_or_name, 
+                     bases: Union[None, Tuple[Type]] = None, 
+                     attr_dict: Union[None, Dict[str, Any]] = None, /):
+        return _type(object_or_name, bases, attr_dict)''')
+
+else:
+    # noinspection PyShadowingBuiltins
+    def type(object_or_name, bases: Union[None, Tuple[Type]] = None, attr_dict: Union[None, Dict[str, Any]] = None):
+        return _type(object_or_name, bases, attr_dict)
+
+
+__all__ = ['bool', 'int', 'float', 'str', 'len', 'isinstance', 'type']

@@ -1,6 +1,8 @@
+from builtins import bool as _bool, int as _int, float as _float, str as _str
+
 import pytest
 
-from lambdachain.builtin_hooks import bool, int, float, str, len, isinstance
+from lambdachain.builtin_hooks import bool, int, float, str, len, isinstance, type
 from lambdachain.lambda_identifier import Lambda as _
 
 
@@ -56,10 +58,24 @@ def test_isinstance(data, types, expected):
     assert isinstance(data, types) == expected
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize(['data', 'expected'], [(True, bool),
-                                               (2, int),
-                                               (3.0, float),
-                                               ('a', str)])
+@pytest.mark.parametrize(['data', 'expected'], [(True, _bool),
+                                                (2, _int),
+                                                (3.0, _float),
+                                                ('a', _str)])
 def test_type_comparison(data, expected):
     assert type(data) == expected
+
+
+def test_new_type():
+    def test_init(self, *it):
+        super(self.__class__, self).__init__(it)
+
+    new_type = type('new_type', (list,), {'__init__': test_init})
+    assert new_type.__name__ == 'new_type'
+    assert new_type.__bases__ == (list,)
+    assert new_type(1, 2, 3) == [1, 2, 3]
+
+
+def test_type_failure():
+    with pytest.raises(TypeError):
+        type(1, 2)
