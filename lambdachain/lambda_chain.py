@@ -163,11 +163,11 @@ class LambdaChain(Generic[T]):
         assert_callable(f)
         return LambdaChain(filterfalse(f, self._it))
 
-    def unique(self, hashable: bool = False) -> 'LambdaChain[T]':
+    def unique(self, hashable: bool = True) -> 'LambdaChain[T]':
         """
-        Remove repeated elements from the current iterable. If ``hashable = True``, a faster hash-based method is used.
-        Note that passing ``hashable = True`` when the current iterable contains unhashable items will result in a
-        ``TypeError``.
+        Remove repeated elements from the current iterable. If ``hashable=False``, a non-hash-based approach will be
+        used, which is a lot slower when the values are in fact hashable, but a fair bit faster if they are not. When
+        in doubt, use the default setting.
 
         :param hashable: Whether all elements of the current iterable are hashable.
 
@@ -175,18 +175,23 @@ class LambdaChain(Generic[T]):
 
         :Examples:
 
-        Take unique values of a ``list``. Since it contains only hashable ``ints``, ``hashable = True`` can be passed
-        to speed up the calculation.
-            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique(hashable=True).force()
+        Take unique values of a ``list``. Since it contains only hashable ``ints``, there is no need to set
+        ``hashable = False``.
+            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique().force()
             [3, 0, 5, 7, 4]
+
+        In this ``list``, each element is itself a ``list`` and therefore unhashable. Even without passing
+        ``hashable=False``, no errors are produced. However, passing ``hashable=True`` will speed up computation.
+            >>> LambdaChain([[3], [0], [5], [7], [0], [4], [3], [4]]).unique().force()
+            [[3], [0], [5], [7], [4]]
         """
         return LambdaChain(unique(self._it, hashable))
 
-    def unique_by(self, key: Callable[[T], Any], hashable: bool = False) -> 'LambdaChain[T]':
+    def unique_by(self, key: Callable[[T], Any], hashable: bool = True) -> 'LambdaChain[T]':
         """
         Remove elements from the current iterable that compare equal after having ``key`` applied to them. If
-        ``hashable = True``, a faster hash-based method is used. Note that passing ``hashable = True`` when the current
-        iterable contains elements that are unhashable under ``key``will result in a``TypeError``.
+        ``hashable = False``, a non-hash-based approach will be used, which is a lot slower when the keys are in fact
+        hashable, but a fair bit faster if they are not. When in doubt, use the default setting.
 
         :param key: The function to apply to the values in the current iterable before comparing for equality.
         :param hashable: Whether all elements of the current iterable are hashable under ``key``.

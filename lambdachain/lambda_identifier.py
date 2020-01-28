@@ -10,11 +10,14 @@ class LambdaIdentifier:
     def __init__(self, f: Callable):
         self._f = f
 
-    # TODO: Think about whether a working `__iter__` method is actually desirable (since it only needs to exist, not
-    #  even work, for `apply`, and this would solve problems with mistakenly using `dict(_)` etc..
-
     def __iter__(self):
-        return iter(())
+        # noinspection PyUnreachableCode
+        def dummy():
+            raise TypeError('An iterable cannot be created from a LambdaIdentifier. Did you mean list, tuple, dict etc. '
+                            'instead of list(_), tuple(_) or dict(_)?')
+            yield
+
+        return dummy()
 
     def __add__(self, other):
         return LambdaIdentifier(lambda x: self._f(x) + other)
@@ -131,9 +134,8 @@ class GetattrProxy(LambdaIdentifier):
     def __call__(self, *args):
         attr = self._attr
         if len(args) != 1:
-            addendum = ', or were you using dict(_) instead of dict?' if attr == 'keys' else ''
             message = (f"A GetattrProxy accessing attribute '{attr}' was called with the wrong number of arguments. "
-                       f"Did you want to access the method '{attr}' with _.{attr} @ {args} instead{addendum}?")
+                       f"Did you want to access the method '{attr}' with _.{attr} @ {args} instead?")
             raise ValueError(message)
 
         arg = args[0]
@@ -141,8 +143,8 @@ class GetattrProxy(LambdaIdentifier):
             return getattr(self._f(arg), attr)
 
         except AttributeError as e:
-            message = (f"If you meant to access the attribute '{attr}' on {arg}, it does not exist - alternatively, "
-                       f"did you want to access the method '{attr}' with _.{attr} @ {arg} instead?")
+            message = (f"'{type(arg)}' object has no attribute '{attr}'. Alternatively, did you want to access the "
+                       f"method '{attr}' with _.{attr} @ {arg} instead?")
             raise ValueError(message) from e
 
 
@@ -151,6 +153,8 @@ class GetattrCallProxy(GetattrProxy):
     def __init__(self, f, attr, arg_or_args):
         self._arg_or_args = arg_or_args
         super().__init__(f, attr)
+
+    # TODO: Handle wrong numbers of arguments more completely.
 
     def __call__(self, obj):
 

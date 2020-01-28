@@ -35,52 +35,55 @@ def rebind(g: Generator[T, None, None], new_source: Iterable):
 
 # TODO: Optimise this. It can actually be guaranteed, in a singlethreaded scenario, that none of the objects
 #  contained herein will be mutated, so regardless of mutability, their hashes will be static (unless for some really
-#  weird reason, the `__hash__` method causes mutation)...
+#  weird reason, the `__hash__` method causes mutation)...or can it be optimised?
 
 
 def unique(it: Iterable[T], hashable: bool) -> Iterable[T]:
+    unique_hashable = set()
+    unique_unhashable = []
+
     if hashable:
-        yield from {k: None for k in it}
+        for e in it:
+            try:
+                if e not in unique_hashable:
+                    unique_hashable.add(e)
+                    yield e
+
+            except TypeError:
+                if e not in unique_unhashable:
+                    unique_unhashable.append(e)
+                    yield e
 
     else:
-        result = []
-        seen_hashable = set()
-        seen_unhashable = []
-        for element in it:
-            try:
-                if element not in seen_hashable:
-                    seen_hashable.add(element)
-                    yield element
-
-            except:
-                if not any(element == seen for seen in seen_unhashable):
-                    seen_unhashable.append(element)
-                    yield element
+        for e in it:
+            if e not in unique_unhashable:
+                unique_unhashable.append(e)
+                yield e
 
 
 def unique_by(it: Iterable[T], key: Callable[[T], U], hashable: bool) -> Iterable[T]:
-    uniques_hashable = set()
-    if hashable:
-        for v in it:
-            k = key(v)
-            if k not in uniques_hashable:
-                uniques_hashable.add(k)
-                yield v
+    unique_hashable = set()
+    unique_unhashable = []
 
-    else:
-        uniques_unhashable = []
-        for v in it:
-            k = key(v)
+    if hashable:
+        for e in it:
+            k = key(e)
             try:
-                if v not in uniques_hashable:
-                    uniques_hashable.add(v)
-                    yield v
+                if k not in unique_hashable:
+                    unique_hashable.add(k)
+                    yield e
 
             except TypeError:
-                if not any(v == seen for seen in uniques_unhashable):
-                    uniques_unhashable.append(v)
-                    yield v
+                if k not in unique_unhashable:
+                    unique_unhashable.append(k)
+                    yield e
 
+    else:
+        for e in it:
+            k = key(e)
+            if k not in unique_unhashable:
+                unique_unhashable.append(k)
+                yield e
 
 def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
     if combine:
