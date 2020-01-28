@@ -39,30 +39,37 @@ def test_folds(data, initial_value, f):
     assert fold_result == foldc_result == expected
 
 
-@pytest.mark.parametrize(['data', 'ordered', 'expected'],
-                         [([3, 0, 5, 7, 0, 4, 3, 4], False, [0, 3, 4, 5, 7]),
-                          ([3, 0, 5, 7, 0, 4, 3, 4], True, [3, 0, 5, 7, 4]),
-                          pytest.param([[0], [2], [0], [1], [2], [0]], True, [[0], [2], [1]], marks=pytest.mark.xfail)
+@pytest.mark.parametrize(['data', 'expected'],
+                         [([3, 0, 5, 7, 0, 4, 3, 4], [3, 0, 5, 7, 4]),
+                          pytest.param([[0], [2], [0], [1], [2], [0]], [[0], [2], [1]])
                           ])
-def test_unique(data, ordered, expected):
-    result = LambdaChain(data).unique(ordered)
-    if ordered:
-        assert result.force() == expected
+def test_unique(data, expected):
+    try:
+        hashable_result = LambdaChain(data).unique(True).force()
+        assert hashable_result == expected
 
-    else:
-        assert result.force(set) == set(expected)
+    except TypeError:
+        unhashable_result = LambdaChain(data).unique(False).force()
+        assert unhashable_result == expected
+        with pytest.raises(TypeError):
+            LambdaChain(data).map(hash).force()
 
 
 @pytest.mark.parametrize(['data', 'f', 'expected'],
                          [([3, 0, 5, 7, 0, 4, 3, 4], _ % 3, [3, 5, 7]),
                           (['apple', 'scream', 'white', 'bay', 'pea'], len, ['apple', 'scream', 'bay']),
-                          pytest.param([[0, 1], [0, 2], [2, 0], [1, 1], [2, 1], [1, 0], [0, 1]],
-                                       _[0],
-                                       [[0, 1], [2, 0], [1, 1]],
-                                       marks=pytest.mark.xfail)
+                          ([[0, 1], [0, 2], [2, 0], [1, 1], [2, 1], [1, 0], [0, 1]], _[0], [[0, 1], [2, 0], [1, 1]])
                           ])
 def test_unique_by(data, expected, f):
-    assert LambdaChain(data).unique_by(f).force() == expected
+    try:
+        hashable_result = LambdaChain(data).unique_by(f, True).force()
+        assert hashable_result == expected
+
+    except TypeError:
+        unhashable_result = LambdaChain(data).unique_by(f, False).force()
+        assert unhashable_result == expected
+        with pytest.raises(TypeError):
+            LambdaChain(data).map(f).map(hash).force()
 
 
 @pytest.mark.parametrize(['data', 'zip_data', 'expected'],

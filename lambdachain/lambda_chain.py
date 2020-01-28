@@ -163,34 +163,33 @@ class LambdaChain(Generic[T]):
         assert_callable(f)
         return LambdaChain(filterfalse(f, self._it))
 
-    def unique(self, ordered: bool = True) -> 'LambdaChain[T]':
+    def unique(self, hashable: bool = False) -> 'LambdaChain[T]':
         """
-        Remove repeated elements from the current iterable. If ``ordered = True``, the unique elements in the result
-        be in the same order as when they first appeared in the original iterable. Does not currently support
-        unhashable values.
+        Remove repeated elements from the current iterable. If ``hashable = True``, a faster hash-based method is used.
+        Note that passing ``hashable = True`` when the current iterable contains unhashable items will result in a
+        ``TypeError``.
 
-        :param ordered: Whether to maintain the original ordering.
+        :param hashable: Whether all elements of the current iterable are hashable.
 
         :return: A new ``LambdaChain`` object with unique elements.
 
         :Examples:
 
-        Take unique values without enforcing ordering. The order found in the result is arbitrary.
-            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique(ordered=False).force()
-            [0, 3, 4, 5, 7]
-
-        When passing ``ordered=True``, the values in the result will appear in the same order as they did in the input.
-            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique(ordered=True).force()
+        Take unique values of a ``list``. Since it contains only hashable ``ints``, ``hashable = True`` can be passed
+        to speed up the calculation.
+            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique(hashable=True).force()
             [3, 0, 5, 7, 4]
         """
-        return LambdaChain(unique(self._it, ordered))
+        return LambdaChain(unique(self._it, hashable))
 
-    def unique_by(self, key: Callable[[T], Any]) -> 'LambdaChain[T]':
+    def unique_by(self, key: Callable[[T], Any], hashable: bool = False) -> 'LambdaChain[T]':
         """
-        Remove elements from the current iterable that compare equal after having ``key`` applied to them. Does not
-        currently support unhashable values.
+        Remove elements from the current iterable that compare equal after having ``key`` applied to them. If
+        ``hashable = True``, a faster hash-based method is used. Note that passing ``hashable = True`` when the current
+        iterable contains elements that are unhashable under ``key``will result in a``TypeError``.
 
         :param key: The function to apply to the values in the current iterable before comparing for equality.
+        :param hashable: Whether all elements of the current iterable are hashable under ``key``.
 
         :return: A new ``LambdaChain`` object with elements corresponding to unique values under ``key``.
 
@@ -205,7 +204,7 @@ class LambdaChain(Generic[T]):
             ['apple', 'scream', 'bay']
         """
         assert_callable(key)
-        return LambdaChain(unique_by(self._it, key))
+        return LambdaChain(unique_by(self._it, key, hashable))
 
     def zip(self, other: Iterable[U]) -> 'LambdaChain[Tuple[T, U]]':
         """
