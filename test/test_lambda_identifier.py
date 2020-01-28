@@ -1,4 +1,4 @@
-from operator import add, sub, mul, truediv, floordiv, mod, eq, gt, ge, lt, le, ne
+from operator import add, sub, mul, truediv, floordiv, mod, eq, gt, ge, lt, le, ne, neg
 from typing import Callable
 
 import pytest
@@ -6,14 +6,15 @@ import pytest
 from lambdachain.lambda_identifier import Lambda as _
 
 ARITHMETIC_PARAMETERS = [0, 1, -3.0, 'value%s', [], True, None]
-ARITHMETIC_OPERATORS = [add, sub, mul, truediv, floordiv, mod, pow]
+BINARY_ARITHMETIC_OPERATORS = [add, sub, mul, truediv, floordiv, mod, pow]
+UNARY_ARITHMETIC_OPERATORS = [abs, neg]
 COMPARISON_OPERATORS = [eq, gt, ge, lt, le, ne]
 
 
 @pytest.mark.parametrize('forward', {True, False})
-@pytest.mark.parametrize('op', ARITHMETIC_OPERATORS)
+@pytest.mark.parametrize('op', BINARY_ARITHMETIC_OPERATORS)
 @pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
-def test_arithmetic_operators(forward, op, data):
+def test_binary_arithmetic_operators(forward, op, data):
     f = op(_, data) if forward else op(data, _)
     try:
         expected = op(3, data) if forward else op(data, 3)
@@ -25,6 +26,22 @@ def test_arithmetic_operators(forward, op, data):
     except Exception as e:
         with pytest.raises(e.__class__):
             f(3)
+
+
+@pytest.mark.parametrize('op', UNARY_ARITHMETIC_OPERATORS)
+@pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
+def test_unary_arithmetic_operators(op, data):
+    f = op(_)
+    try:
+        expected = op(data)
+        assert f(data) == expected
+
+    except AssertionError:
+        raise
+
+    except Exception as e:
+        with pytest.raises(e.__class__):
+            f(data)
 
 
 @pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))

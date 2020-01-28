@@ -13,7 +13,13 @@ def assert_callable(f):
         f: The object to check.
     """
     if not callable(f):
-        raise TypeError(f'{f} is not callable')
+        try:
+            addendum = '. Did you mean to use list instead of list(_)?' if len(f) == 0 else ''
+
+        except TypeError:
+            addendum = ''
+
+        raise TypeError(f'{f} is not callable{addendum}')
 
 
 def assert_genexpr(g):

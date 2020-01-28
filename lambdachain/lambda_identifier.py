@@ -10,6 +10,9 @@ class LambdaIdentifier:
     def __init__(self, f: Callable):
         self._f = f
 
+    # TODO: Think about whether a working `__iter__` method is actually desirable (since it only needs to exist, not
+    #  even work, for `apply`, and this would solve problems with mistakenly using `dict(_)` etc..
+
     def __iter__(self):
         return iter(())
 
@@ -76,11 +79,17 @@ class LambdaIdentifier:
     def __getitem__(self, item):
         return LambdaIdentifier(lambda x: self._f(x)[item])
 
+    def __neg__(self):
+        return LambdaIdentifier(lambda x: -(self._f(x)))
+
+    def __abs__(self):
+        return LambdaIdentifier(lambda x: abs(self._f(x)))
+
     def __bool__(self):
         raise ValueError("A LambdaIdentifier cannot be converted to a bool; if you wish to apply boolean operators in "
                          "a lambda expression, use '&' for 'and', '|' for 'or' and '~' for 'not' instead")
 
-    # TODO: Think about how to support chaining boolean operators.
+    # TODO: Think about how to support chaining boolean operators without losing short-circuit behaviour.
 
     # noinspection PyPep8
     def __and__(self, other):
@@ -122,8 +131,9 @@ class GetattrProxy(LambdaIdentifier):
     def __call__(self, *args):
         attr = self._attr
         if len(args) != 1:
+            addendum = ', or were you using dict(_) instead of dict?' if attr == 'keys' else ''
             message = (f"A GetattrProxy accessing attribute '{attr}' was called with the wrong number of arguments. "
-                       f"Did you want to access the method '{attr}' with _.{attr} @ {args} instead?")
+                       f"Did you want to access the method '{attr}' with _.{attr} @ {args} instead{addendum}?")
             raise ValueError(message)
 
         arg = args[0]
