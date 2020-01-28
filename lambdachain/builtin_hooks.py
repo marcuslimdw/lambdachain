@@ -3,6 +3,8 @@ from typing import Type, Tuple, Union, Any, Dict
 from lambdachain.lambda_identifier import LambdaIdentifier
 from lambdachain.utils import PY38
 
+# TODO: Hook other builtins like bytes
+
 _old_bool = bool
 _old_int = int
 _old_float = float
@@ -65,11 +67,8 @@ def _type(object_or_name, bases: Union[None, Tuple[Type]] = None, attr_dict: Uni
     elif bases is not None and attr_dict is not None:
         return _old_type(object_or_name, bases, attr_dict)
 
-    elif bases is attr_dict is None:
-        pass
-
     else:
-        return _old_type(None, None)
+        raise TypeError('type() takes 1 or 3 arguments')
 
 
 if PY38:
