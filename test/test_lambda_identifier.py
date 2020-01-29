@@ -28,6 +28,35 @@ def test_binary_arithmetic_operators(forward, op, data):
             f(3)
 
 
+@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
+@pytest.mark.parametrize('op', [eq, gt, ge, lt, le, ne])
+def test_comparison_operators(a, b, op):
+    f = op(_, _)
+    try:
+        expected = op(a, b)
+        assert f(a)(b) == expected
+
+    except Exception as e:
+        with pytest.raises(e.__class__):
+            f(a)(b)
+
+
+@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
+@pytest.mark.parametrize('op', [add, sub, mod, eq])
+def test_double(op, a, b):
+    f = op(_, _)
+    try:
+        expected = op(a, b)
+        assert f(a)(b) == expected
+
+    except AssertionError:
+        raise
+
+    except Exception as e:
+        with pytest.raises(e.__class__):
+            f(a)(b)
+
+
 @pytest.mark.parametrize('op', UNARY_ARITHMETIC_OPERATORS)
 @pytest.mark.parametrize('data', ARITHMETIC_PARAMETERS)
 def test_unary_arithmetic_operators(op, data):
@@ -42,19 +71,6 @@ def test_unary_arithmetic_operators(op, data):
     except Exception as e:
         with pytest.raises(e.__class__):
             f(data)
-
-
-@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
-@pytest.mark.parametrize('op', [eq, gt, ge, lt, le, ne])
-def test_comparison_operators(a, b, op):
-    f = op(_, _)
-    try:
-        expected = op(a, b)
-        assert f(a)(b) == expected
-
-    except Exception as e:
-        with pytest.raises(e.__class__):
-            f(a)(b)
 
 
 @pytest.mark.parametrize(['data', 'key', 'expected'], [('cake', 2, 'k')])
@@ -75,11 +91,6 @@ def test_getattr(data):
             f(data)
 
 
-def test_getattr_mistake():
-    with pytest.raises(ValueError):
-        _.join('a', 'b', 'c')
-
-
 @pytest.mark.parametrize(['data', 'f', 'expected'],
                          [('abc', _.upper @ (), 'ABC'),
                           ('hello', _.count @ 'l', 2),
@@ -94,20 +105,9 @@ def test_getattr_call(data, f: Callable, expected):
             f(data)
 
 
-@pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
-@pytest.mark.parametrize('op', [add, sub, mod, eq])
-def test_double(op, a, b):
-    f = op(_, _)
-    try:
-        expected = op(a, b)
-        assert f(a)(b) == expected
-
-    except AssertionError:
-        raise
-
-    except Exception as e:
-        with pytest.raises(e.__class__):
-            f(a)(b)
+def test_getattr_mistake():
+    with pytest.raises(ValueError):
+        _.join('a', 'b', 'c')
 
 
 @pytest.mark.parametrize(['a', 'b'], zip(*[ARITHMETIC_PARAMETERS, ARITHMETIC_PARAMETERS]))
@@ -142,6 +142,11 @@ def test_or(a, b):
 def test_not(data):
     f = ~_
     assert f(data) == (not data)
+
+
+def test_iter_fail():
+    with pytest.raises(TypeError):
+        list(_)
 
 
 def test_bool_conversion_fail():

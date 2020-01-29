@@ -13,8 +13,8 @@ class LambdaIdentifier:
     def __iter__(self):
         # noinspection PyUnreachableCode
         def dummy():
-            raise TypeError('An iterable cannot be created from a LambdaIdentifier. Did you mean list, tuple, dict etc. '
-                            'instead of list(_), tuple(_) or dict(_)?')
+            raise TypeError('An iterable cannot be created from a LambdaIdentifier. Did you mean, for example, list or '
+                            'dict instead of list(_) or dict(_)?')
             yield
 
         return dummy()
