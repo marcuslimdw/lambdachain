@@ -1,14 +1,18 @@
-from itertools import groupby as groupby, count
 from collections import defaultdict
 from functools import reduce
-from typing import TypeVar, Iterable, Callable, Any, Generator, Tuple, Hashable
+from itertools import groupby as groupby, count
+from typing import TypeVar, Iterable, Callable, Generator, Tuple
 
 T = TypeVar('T')
 U = TypeVar('U')
 
 
-def identity(x: T) -> T:
-    return x
+def enumerate_(it: Iterable[T], start: int, step: int) -> Iterable[Tuple[T, int]]:
+    if step == 1:
+        return enumerate(it, start)
+
+    else:
+        return zip(count(start, step), it)
 
 
 def fold(f: Callable[[U, T], U], it: Iterable[T], initial_value: U) -> U:
@@ -20,6 +24,22 @@ def foldc(f: Callable[[U, T], U], it: Iterable[T]) -> Callable[[U], U]:
         return reduce(f, it, u)
 
     return inner
+
+
+def identity(x: T) -> T:
+    return x
+
+
+def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
+    if combine:
+        d = defaultdict(list)
+        for v in it:
+            d[key(v)].append(v)
+
+        yield from d.items()
+
+    else:
+        yield from ((k, list(g)) for k, g in groupby(it, key))
 
 
 def rebind(g: Generator[T, None, None], new_source: Iterable):
@@ -84,22 +104,3 @@ def unique_by(it: Iterable[T], key: Callable[[T], U], hashable: bool) -> Iterabl
             if k not in unique_unhashable:
                 unique_unhashable.append(k)
                 yield e
-
-def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
-    if combine:
-        d = defaultdict(list)
-        for v in it:
-            d[key(v)].append(v)
-
-        yield from d.items()
-
-    else:
-        yield from ((k, list(g)) for k, g in groupby(it, key))
-
-
-def enumerate_(it: Iterable[T], start: int, step: int) -> Iterable[Tuple[T, int]]:
-    if step == 1:
-        return enumerate(it, start)
-
-    else:
-        return zip(count(start, step), it)
