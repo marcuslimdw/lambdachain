@@ -9,15 +9,14 @@ from lambdachain.lambda_chain import LambdaChain, uncurry, curry
 from lambdachain.lambda_identifier import Lambda as _
 
 
-@pytest.mark.parametrize(['data', 'genexp', 'force', 'expected'],
-                         [([2, 4, 6], (i // 2 for i in _), list, [1, 2, 3]),
-                          ([[1, 2], [3, 4], [5, 6]], ([i * 2 for i in s] for s in _), list,
-                           [[2, 4], [6, 8], [10, 12]]),
-                          ([[1, 2], [3, 4], [5, 6]], (i * 3 for s in _ for i in s), list, [3, 6, 9, 12, 15, 18]),
-                          (groupby([1, 3, 4, 8], _ % 2), ((k, list(g)) for k, g in _), dict, {1: [1, 3], 0: [4, 8]})
+@pytest.mark.parametrize(['data', 'genexp', 'expected'],
+                         [([2, 4, 6], (i // 2 for i in _), [1, 2, 3]),
+                          ([[1, 2], [3, 4], [5, 6]], ([i * 2 for i in s] for s in _), [[2, 4], [6, 8], [10, 12]]),
+                          ([[1, 2], [3, 4], [5, 6]], (i * 3 for s in _ for i in s), [3, 6, 9, 12, 15, 18]),
+                          (groupby([1, 3, 4, 8], _ % 2), ((k, list(g)) for k, g in _), [(1, [1, 3]), (0, [4, 8])])
                           ])
-def test_apply(data, genexp, force, expected):
-    assert LambdaChain(data).apply(genexp).force(force) == expected
+def test_apply(data, genexp, expected):
+    assert LambdaChain(data).apply(genexp).force() == expected
 
 
 @pytest.mark.parametrize(['f', 'data'],

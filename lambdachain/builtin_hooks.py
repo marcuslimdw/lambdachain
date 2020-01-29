@@ -5,6 +5,8 @@ from lambdachain.utils import PY38
 
 # TODO: Hook other builtins like bytes
 
+# TODO: Think about whether hooking types is actually necessary/desirable
+
 _old_bool = bool
 _old_int = int
 _old_float = float
@@ -13,6 +15,7 @@ _old_isinstance = isinstance
 _old_len = len
 _old_type = type
 
+_EMPTY_OBJECT_OR_NAME = object()
 _EMPTY_BASES = object()
 _EMPTY_ATTR_DICT = object()
 
@@ -60,6 +63,9 @@ def isinstance(obj, types):
 
 
 def _type(object_or_name, bases: Union[None, Tuple[Type]] = None, attr_dict: Union[None, Dict[str, Any]] = None):
+    if object_or_name is _EMPTY_OBJECT_OR_NAME:
+        raise TypeError('type() takes 1 or 3 arguments')
+
     if isinstance(object_or_name, LambdaIdentifier):
         return LambdaIdentifier(lambda x: type(x))
 
@@ -78,14 +84,14 @@ if PY38:
 
     # This is, unfortunately, a SyntaxError in earlier versions...
 
-    exec('''def type(object_or_name, 
+    exec('''def type(object_or_name: Any = _EMPTY_OBJECT_OR_NAME, 
                      bases: Union[object, Tuple[Type]] = _EMPTY_BASES, 
                      attr_dict: Union[object, Dict[str, Any]] = _EMPTY_ATTR_DICT, /):
         return _type(object_or_name, bases, attr_dict)''')
 
 else:
     # noinspection PyShadowingBuiltins
-    def type(object_or_name,
+    def type(object_or_name: Any = _EMPTY_OBJECT_OR_NAME,
              bases: Union[object, Tuple[Type]] = _EMPTY_BASES,
              attr_dict: Union[object, Dict[str, Any]] = _EMPTY_ATTR_DICT):
         return _type(object_or_name, bases, attr_dict)
