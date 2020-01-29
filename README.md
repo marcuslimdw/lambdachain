@@ -51,7 +51,7 @@ This works, but is a bit imperative and lengthy. You could use `itertools.groupb
 
 ```python
 >>> from itertools import groupby
->>> dict((k, sorted(g)) for k, g in groupby(sorted(filter(lambda name: len(name) > 4, set(names)), key=lambda name: name[0]), key=lambda name: name[0]))
+>>> {k: sorted(g) for k, g in groupby(sorted(filter(lambda name: len(name) > 4, set(names)), key=lambda name: name[0]), key=lambda name: name[0])}
 {'A': ['Aaron', 'Amelia'], 'E': ['Emily'], 'J': ['Joanne', 'Joash'], 'K': ['Keith'], 'M': ['Melissa'], 'S': ['Samantha']}
 ```
 
@@ -144,4 +144,5 @@ This is the equivalent to the following:
 The advantage of `lambdachain` is that you can have multiple `apply` calls in a data pipeline. This is particularly helpful after a stage that converts individual elements to collections, such as `groupby`. 
 
 ## Other Examples
+
 
