@@ -9,6 +9,8 @@ from lambdachain.functions import T, U, fold, unique, unique_by, rebind, foldc, 
 from lambdachain.lambda_identifier import Lambda as _, LambdaIdentifier
 from lambdachain.utils import assert_callable, assert_genexpr, PY37
 
+sum_ = sum
+
 
 class LambdaChain(Generic[T]):
 
@@ -290,6 +292,55 @@ class ForceProxy(Generic[T]):
         """
         assert_callable(f)
         return foldc(uncurry(f), self._it)
+
+    def join(self, separator: str) -> str:
+        """Combine the strings contained in the current iterable, separated by ``separator``. Analogous to ``str.join``.
+
+        :param separator: The string to separate successive strings from the current iterable.
+
+        :return: The result of joining the strings in the current iterable, separated by ``separator``.
+
+        :Examples:
+
+        Combine a number of strings with ``, '`` separating them.
+
+            >>> LambdaChain(['apple', 'banana', 'cucumber']).force.join(', ')
+            'apple, banana, cucumber'
+        """
+        return separator.join(self._it)
+
+    def product(self, initial_value=1):
+        """Take the product of all values in the current iterable, including a possible initial value, through
+        recursive multiplication.
+
+        :param initial_value: The initial value to start the product off.
+
+        :return: The product of the elements in the current iterable and the initial value.
+
+        :Examples:
+
+        Take the product of some data with the default initial value, 1.
+
+            >>> LambdaChain([3, 6, -2]).force.product()
+            -36
+        """
+        return fold(lambda x, y: x * y, self._it, initial_value)
+
+    def sum(self, initial_value=0):
+        """Take the sum of all values in the current iterable, including a possible initial value, through recursive
+        addition.
+
+        :param initial_value: The initial value to start the sum off.
+        :return: The sum of the elements in the current iterable and the initial value.
+
+        :Examples:
+
+        Take the sum of some data with the default initial value, 0.
+
+            >>> LambdaChain([5, 10, 15, 20]).force.sum()
+            50
+        """
+        return sum_(self._it, initial_value)
 
 
 def uncurry(f: Union[LambdaIdentifier, Callable]):
