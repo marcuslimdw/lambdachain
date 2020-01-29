@@ -13,6 +13,9 @@ _old_isinstance = isinstance
 _old_len = len
 _old_type = type
 
+_EMPTY_BASES = object()
+_EMPTY_ATTR_DICT = object()
+
 
 # noinspection PyShadowingBuiltins
 def bool(x):
@@ -60,11 +63,11 @@ def _type(object_or_name, bases: Union[None, Tuple[Type]] = None, attr_dict: Uni
     if isinstance(object_or_name, LambdaIdentifier):
         return LambdaIdentifier(lambda x: type(x))
 
-    elif bases is None and attr_dict is None:
+    elif bases is _EMPTY_BASES and attr_dict is _EMPTY_ATTR_DICT:
         type_result = _old_type(object_or_name)
         return _NEW_TYPE_MAP.get(type_result, type_result)
 
-    elif bases is not None and attr_dict is not None:
+    elif bases is not _EMPTY_BASES and attr_dict is not _EMPTY_ATTR_DICT:
         return _old_type(object_or_name, bases, attr_dict)
 
     else:
@@ -76,13 +79,15 @@ if PY38:
     # This is, unfortunately, a SyntaxError in earlier versions...
 
     exec('''def type(object_or_name, 
-                     bases: Union[None, Tuple[Type]] = None, 
-                     attr_dict: Union[None, Dict[str, Any]] = None, /):
+                     bases: Union[object, Tuple[Type]] = _EMPTY_BASES, 
+                     attr_dict: Union[object, Dict[str, Any]] = _EMPTY_ATTR_DICT, /):
         return _type(object_or_name, bases, attr_dict)''')
 
 else:
     # noinspection PyShadowingBuiltins
-    def type(object_or_name, bases: Union[None, Tuple[Type]] = None, attr_dict: Union[None, Dict[str, Any]] = None):
+    def type(object_or_name,
+             bases: Union[object, Tuple[Type]] = _EMPTY_BASES,
+             attr_dict: Union[object, Dict[str, Any]] = _EMPTY_ATTR_DICT):
         return _type(object_or_name, bases, attr_dict)
 
 

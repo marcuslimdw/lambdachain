@@ -76,6 +76,9 @@ def test_new_type():
     assert new_type(1, 2, 3) == [1, 2, 3]
 
 
-def test_type_failure():
+@pytest.mark.parametrize('args', [(),
+                                  (None, None),
+                                  (None, None, None, None)])
+def test_type_failure(args):
     with pytest.raises(TypeError):
-        type(1, 2)
+        type(*args)
