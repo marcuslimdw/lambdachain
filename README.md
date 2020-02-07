@@ -11,16 +11,16 @@ A Python library intended to inject a little functional programming goodness int
 
 `pip install lambdachain`
 
-Note that `lambdachain` requires Python >= 3.6.
+Note that `lambdachain` requires Python >= 3.6. There are no other dependencies. However, if you want to run the unit tests, you'll have to install `pytest`.
 
-That's it! You'll generally only need three imports to use `lambdachain`: the `LambdaChain` object to allow you to chain operations, the `_` object (which is an instance of `LambdaIdentifier`) to create lambdas quickly, and the `builtin_hooks` module, if you intend to do stuff like `int(_)` or `type(_)` - the builtin hooks replace the builtin versions of functions with ones that can handle `LambdaIdentifiers`.
+That's it! You'll generally only need three imports to use `lambdachain`: the `LC` object to allow you to chain operations, the `_` object (which is an instance of `LambdaIdentifier`) to create lambdas quickly, and the `builtin_hooks` module, if you intend to do stuff like `int(_)` or `type(_)` - the builtin hooks replace the builtin versions of functions with ones that can handle `LambdaIdentifiers`.
 
 ```python
-from lambdachain import LambdaChain, _
+from lambdachain import LC, _
 from builtin_hooks import *
 ```
 
-Note that if you're using IPython, the shell tends to overwrite `_` with the result of the last expression. Therefore, you might want to import `_` under another name, such as with `from lambdachain import _ as L`.
+Note that if you're using IPython, the shell tends to overwrite `_` with the result of the last expression. Therefore, you might want to import `_` under another name, such as with `from lambdachain import _ as Y` (which kind of looks like an upside down λ).
 
 ---
 
@@ -55,12 +55,14 @@ This works, but is a bit imperative and lengthy. You could use `itertools.groupb
 {'A': ['Aaron', 'Amelia'], 'E': ['Emily'], 'J': ['Joanne', 'Joash'], 'K': ['Keith'], 'M': ['Melissa'], 'S': ['Samantha']}
 ```
 
-There's a lot going on in that one line. What `lambdachain` brings you is the ability to chain computations together in a functional way, as well as express lambda functions compactly, without losing clarity (the outer parentheses are only for method chaining, and are not necessarily for functionality):
+There's a lot going on in that one line. Also, the fact that some operations extend to the left and some to the right makes it difficult to read.
+
+What `lambdachain` brings you is the ability to chain computations together in a functional way, as well as express lambda functions compactly, without losing clarity (the outer parentheses are only for method chaining, and are not necessarily for functionality):
 
 ```python
->>> from lambdachain import LambdaChain, _
+>>> from lambdachain import LC, _
 >>> from lambdachain.builtin_hooks import *
->>> (LambdaChain(names)
+>>> LC(names)
 ...     .unique()
 ...     .filter(len(_) > 4)
 ...     .groupby(_[0])
@@ -78,7 +80,7 @@ The above operations can be read like a list of steps:
 
 What about the `force`?
 
-In `lambdachain`, all *non-forcing* operations are *lazy*, which means that they are not performed until you actually need them. Therefore, an additional `force` step is needed to convert the result of step 3 into a `dict`. Since all the `lambdachain` operations do not change the data you pass in, there's no need to perform calculations until you actually need their results.
+In `lambdachain`, all *non-forcing* operations are *lazy*, which means that they are not performed until you actually need them. Therefore, an additional `force` step is needed to convert the result of step 3 into a `dict`. Since all the `lambdachain` operations do not change the data you pass in, there's no need to perform caLCulations until you actually need their results.
 
 For completeness, the equivalent Scala code:
 
@@ -97,12 +99,12 @@ res1: scala.collection.immutable.Map[Char,Seq[String]] = Map(E -> ArrayBuffer(Em
 Tired of writing `lambda x: x + 1` or `from operator import itemgetter`? Just use `lambdachain`:
 
 ```python
->>> f = _ + 1  # Create a lambda function that adds 1
+>>> f = _ + 1  # Instead of lambda x: x + 1
 >>> f(1)
 2
->>> g = _[2:4]
->>> g('python')
-'th'
+>>> g = len(_[2])  # Instead of lambda x: len(x[2])
+>>> g(['lambda', 'chain', 'fun'])
+3
 ```
 
 ### Map over both attributes and methods
@@ -110,14 +112,14 @@ Tired of writing `lambda x: x + 1` or `from operator import itemgetter`? Just us
 Take the real parts of complex numbers:
 
 ```python
->>> LambdaChain([1.0 + 2.0j, -3.0 - 1.0j, 6.0 - 3.0j, 2.0]).map(_.real).force()
+>>> LC([1.0 + 2.0j, -3.0 - 1.0j, 6.0 - 3.0j, 2.0]).map(_.real).force()
 [1.0, -3.0, 6.0, 2.0]
 ```
 
 Strip strings:
 
 ```python
->>> LambdaChain(['   spaces  ', ' alligator.. ..  ', 'thing', ' help    ']).map(_.strip @ ()).force()
+>>> LC(['   spaces  ', ' alligator.. ..  ', 'thing', ' help    ']).map(_.strip @ ()).force()
 ['spaces', 'alligator.. ..', 'thing', 'help']
 ```
 
@@ -125,11 +127,11 @@ Note that when you're calling a *method*, as opposed to accessing an *attribute*
 
 ### Rebindable generators
 
-Through a bit of poking around in CPython (yes, that means this might not work on Jython or PyPy), the idea of a *lambda generator* is possible with the `LambdaChain.apply` method. Basically, you can define arbitrary generator expressions and then apply them to a `LambdaChain` object, which "inserts" the iterable it's holding into the source iterable for the generator:
+Through a bit of poking around in CPython (yes, that means this might not work on Jython or PyPy), the idea of a *lambda generator* is possible with the `LC.apply` method. Basically, you can define arbitrary generator expressions and then apply them to a `LC` object, which "inserts" the iterable it's holding into the source iterable for the generator:
 
 ```python
 >>> g = (i * 3 for i in _ if i % 2 == 0)
->>> LambdaChain([1, 2, 3, 4, 5]).apply(g).sum()
+>>> LC([1, 2, 3, 4, 5]).apply(g).sum()
 18
 ```
 
@@ -145,4 +147,41 @@ The advantage of `lambdachain` is that you can have multiple `apply` calls in a 
 
 ## Other Examples
 
+The [Sock Merchant problem](https://www.hackerrank.com/challenges/sock-merchant/problem) involves finding the number of pairs of each unique value in a collection, ignoring remainders. So, for example, `[1, 2, 1, 2, 1, 3, 2]` has 2 pairs and 3 odd ones out.
 
+Two possible solutions:
+
+```python
+>>> LC([1, 2, 1, 2, 1, 3, 2]).groupby(_).apply(len(g) // 2 for k, g in _).force.sum()
+2
+>>> LC([1, 2, 1, 2, 1, 3, 2]).groupby(_).map(len(_[1]) // 2).force.sum()
+2
+```
+
+Explanation:
+
+1. Group the input values by the identity function, placing all the instances of each unique value into their own group
+2. Take the length of each group and floor divide by 2
+3. Evaluate the previous steps by taking the sum
+
+---
+
+## FAQ
+
+Q: Why do I get `TypeError` when I do things like `len(_)` or `int(_)`?
+
+A: You need to import a set of functions that replace the builtins so they'll play nice with `lambdachain`. Execute `from lambdachain.builtin_hooks import *`.
+
+Q: I still get problems with stuff like `bytes`!
+
+A: I haven't implemented those yet. Sorry.
+
+---
+
+## Future plans
+
+* Add static methods for iterators like `range`, `cycle` and `repeat`
+* More operations like `take`, `takewhile`, `compact` and `partition`
+* Proper separate documentation (I couldn't really get Sphinx to work well with the complex type signatures)
+
+If you have any suggestions/find any bugs, feel free to email me at marcuslimdw@gmail.com.
