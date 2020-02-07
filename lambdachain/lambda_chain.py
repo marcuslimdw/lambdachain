@@ -70,7 +70,7 @@ class LambdaChain(Generic[T]):
         """
         return LambdaChain(enumerate_(self._it, start, step))
 
-    def filter(self, f: Callable[[T], Any] = identity) -> 'LambdaChain[T]':
+    def filter(self, f: Callable[[T], bool] = identity) -> 'LambdaChain[T]':
         """
         Remove the elements of the current iterable that, when passed into a function, return a value that evaluates
         to ``False``. Analogous to the builtin function ``filter``.
@@ -92,7 +92,7 @@ class LambdaChain(Generic[T]):
     def flatten(self) -> 'LambdaChain':
         return LambdaChain(flatten(self._it))
 
-    def groupby(self, key: Callable[[T], Any], combine: bool = True) -> 'LambdaChain[Tuple[Any, List[T]]]':
+    def groupby(self, key: Callable[[T], U] = identity, combine: bool = True) -> 'LambdaChain[Tuple[U, List[T]]]':
         """Group elements from the current iterable that compare equal after having ``key`` applied to them, yielding
         ``tuples`` where the first element is a unique result of applying ``key`` and the second is a ``list`` of all
         values in the current iterable that have that result when ``key`` is applied to them.
@@ -153,7 +153,7 @@ class LambdaChain(Generic[T]):
         """
         return LambdaChain(list(self._it))
 
-    def reject(self, f: Callable[[T], Any]) -> 'LambdaChain[T]':
+    def reject(self, f: Callable[[T], bool] = identity) -> 'LambdaChain[T]':
         """Remove the elements of the current iterable that, when passed into a function, return a value that evaluates
         to ``True``. Analogous to ``itertools.filterfalse``.
 
