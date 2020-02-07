@@ -49,8 +49,8 @@ _NEW_TYPE_MAP = {
 
 
 # noinspection PyShadowingBuiltins
-def len(x):
-    return LambdaIdentifier(_old_len) if isinstance(x, LambdaIdentifier) else _old_len(x)
+def len(x: Union[LambdaIdentifier, Any]):
+    return LambdaIdentifier(lambda y: _old_len(x._f(y))) if isinstance(x, LambdaIdentifier) else _old_len(x)
 
 
 # noinspection PyShadowingBuiltins
