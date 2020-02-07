@@ -123,7 +123,7 @@ class LambdaChain(Generic[T]):
         assert_callable(key)
         return LambdaChain(groupby_(self._it, key, combine))
 
-    def map(self, f: Callable[[T], U], **kwargs) -> 'LambdaChain[U]':
+    def map(self, f: Callable[[T], U], *args, **kwargs) -> 'LambdaChain[U]':
         """Apply a function to each element of the current iterable. Analogous to the builtin function ``map``.
 
         :param f: The function to apply.
@@ -144,7 +144,7 @@ class LambdaChain(Generic[T]):
             [5, 3, 8]
         """
         assert_callable(f)
-        return LambdaChain(map_(f, self._it, **kwargs))
+        return LambdaChain(map_(f, self._it, *args, **kwargs))
 
     def persist(self) -> 'LambdaChain[T]':
         """Convert the current iterable to a ``list``, allowing it to be used in multiple operations.
@@ -323,7 +323,7 @@ class ForceProxy(Generic[T]):
         assert_callable(f)
         return foldc(uncurry(f), self._it)
 
-    def foreach(self, f: Callable[[T, Mapping[str, Any]], None], **kwargs):
+    def foreach(self, f: Callable[[T, Mapping[str, Any]], None], *args, **kwargs):
         """Apply a side effect-causing function to each element of the current iterable.
 
         :param f: The function to apply.
@@ -340,7 +340,7 @@ class ForceProxy(Generic[T]):
             9"""
         assert_callable(f)
         for element in self._it:
-            f(element, **kwargs)
+            f(element, *args, **kwargs)
 
     def join(self, separator: str) -> str:
         """Combine the strings contained in the current iterable, separated by ``separator``. Analogous to ``str.join``.

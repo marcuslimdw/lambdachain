@@ -36,9 +36,9 @@ def identity(x: T) -> T:
     return x
 
 
-# def map_(f: Callable[[T], U], it: Iterable[T], **kwargs) -> Iterable[U]:
-def map_(f, it, **kwargs):
-    return map(partial(f, **kwargs), it)
+# def map_(f: Callable[[T], U], it: Iterable[T], *args, **kwargs) -> Iterable[U]:
+def map_(f, it, *args, **kwargs):
+    return map(partial(f, *args, **kwargs), it)
 
 
 # def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
