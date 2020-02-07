@@ -1,5 +1,5 @@
 from collections import defaultdict
-from functools import reduce
+from functools import reduce, partial
 from itertools import groupby as groupby, count
 from typing import TypeVar, Iterable, Callable, Generator, Tuple
 
@@ -15,11 +15,17 @@ def enumerate_(it: Iterable[T], start: int, step: int) -> Iterable[Tuple[T, int]
         return zip(count(start, step), it)
 
 
-def fold(f: Callable[[U, T], U], it: Iterable[T], initial_value: U) -> U:
+def flatten(it: Iterable[Iterable[T]]) -> Iterable[T]:
+    return (element for sub_iterable in it for element in sub_iterable)
+
+
+# def fold(f: Callable[[U, T], U], it: Iterable[T], initial_value: U) -> U:
+def fold(f, it, initial_value):
     return reduce(f, it, initial_value)
 
 
-def foldc(f: Callable[[U, T], U], it: Iterable[T]) -> Callable[[U], U]:
+# def foldc(f: Callable[[U, T], U], it: Iterable[T]) -> Callable[[U], U]:
+def foldc(f, it):
     def inner(u: U) -> U:
         return reduce(f, it, u)
 
@@ -30,7 +36,13 @@ def identity(x: T) -> T:
     return x
 
 
-def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
+# def map_(f: Callable[[T], U], it: Iterable[T], **kwargs) -> Iterable[U]:
+def map_(f, it, **kwargs):
+    return map(partial(f, **kwargs), it)
+
+
+# def groupby_(it: Iterable[T], key: Callable[[T], U], combine: bool) -> Iterable[Tuple[U, T]]:
+def groupby_(it, key, combine):
     if combine:
         d = defaultdict(list)
         for v in it:
@@ -104,3 +116,6 @@ def unique_by(it: Iterable[T], key: Callable[[T], U], hashable: bool) -> Iterabl
             if k not in unique_unhashable:
                 unique_unhashable.append(k)
                 yield e
+
+def without(it: Iterable[T], other: Iterable[T]) -> Iterable[T]:
+    pass

@@ -5,7 +5,7 @@ from operator import add
 import pytest
 
 from lambdachain.builtin_hooks import len
-from lambdachain.lambda_chain import LambdaChain, uncurry, curry
+from lambdachain.lambda_chain import LambdaChain as LC, uncurry, curry
 from lambdachain.lambda_identifier import Lambda as _
 
 
@@ -16,7 +16,7 @@ from lambdachain.lambda_identifier import Lambda as _
                           (groupby([1, 3, 4, 8], _ % 2), ((k, list(g)) for k, g in _), [(1, [1, 3]), (0, [4, 8])])
                           ])
 def test_apply(data, genexp, expected):
-    assert LambdaChain(data).apply(genexp).force() == expected
+    assert LC(data).apply(genexp).force() == expected
 
 
 @pytest.mark.parametrize(['f', 'data'],
@@ -38,18 +38,18 @@ def test_curry(f, data):
                                                                  ([True, True, False], 0, 1,
                                                                   [(0, True), (1, True), (2, False)])])
 def test_enumerate(data, start, step, expected):
-    assert LambdaChain(data).enumerate(start, step).force() == expected
+    assert LC(data).enumerate(start, step).force() == expected
 
 
 @pytest.mark.parametrize(['data', 'f', 'expected'], [(range(-5, 5), _ % 2 == 0, [-4, -2, 0, 2, 4])])
 def test_filter(data, f, expected):
-    assert LambdaChain(data).filter(_ % 2 == 0).force() == expected
+    assert LC(data).filter(_ % 2 == 0).force() == expected
 
 
 @pytest.mark.parametrize(['data', 'initial_value'], [(range(3, 7), -2)])
 @pytest.mark.parametrize('f', [add])
 def test_folds(data, initial_value, f):
-    chain = LambdaChain(data).persist()
+    chain = LC(data).persist()
     f_curried = curry(f)
     fold_result = chain.force.fold(f, initial_value)
     foldc_result = chain.force.foldc(f_curried)(initial_value)
@@ -68,21 +68,21 @@ def test_folds(data, initial_value, f):
                            [(5, ['karma']), (3, ['pie', 'sty']), (4, ['cake']), (5, ['laugh'])])
                           ])
 def test_groupby(data, f, combine, expected):
-    assert LambdaChain(data).groupby(f, combine).force() == expected
+    assert LC(data).groupby(f, combine).force() == expected
 
 
 def test_iter():
-    assert list(LambdaChain((1, 2, 3))) == [1, 2, 3]
+    assert list(LC((1, 2, 3))) == [1, 2, 3]
 
 
 @pytest.mark.parametrize(['data', 'f', 'expected'], [(range(-5, 5, 3), _ + 1, [-4, -1, 2, 5])])
 def test_map(data, f, expected):
-    assert LambdaChain(data).map(f).force() == expected
+    assert LC(data).map(f).force() == expected
 
 
 @pytest.mark.parametrize(['data', 'f', 'expected'], [(range(-5, 5), _ % 2 == 0, [-5, -3, -1, 1, 3])])
 def test_reject(data, f, expected):
-    assert LambdaChain(data).reject(_ % 2 == 0).force() == expected
+    assert LC(data).reject(_ % 2 == 0).force() == expected
 
 
 @pytest.mark.parametrize(['f', 'data'],
@@ -105,7 +105,7 @@ def test_uncurry(f, data):
                           ])
 @pytest.mark.parametrize('hashable', [True, False])
 def test_unique(data, expected, hashable):
-    assert LambdaChain(data).unique(hashable).force() == expected
+    assert LC(data).unique(hashable).force() == expected
 
 
 @pytest.mark.parametrize(['data', 'f', 'expected'],
@@ -115,7 +115,7 @@ def test_unique(data, expected, hashable):
                           ])
 @pytest.mark.parametrize('hashable', [True, False])
 def test_unique_by(data, expected, f, hashable):
-    assert LambdaChain(data).unique_by(f, hashable).force() == expected
+    assert LC(data).unique_by(f, hashable).force() == expected
 
 
 @pytest.mark.parametrize(['data', 'zip_data', 'expected'],
@@ -123,27 +123,51 @@ def test_unique_by(data, expected, f, hashable):
                            [('alpha', True), ('bravo', True), ('charlie', False)])
                           ])
 def test_zip(data, zip_data, expected):
-    assert LambdaChain(data).zip(zip_data).force() == expected
+    assert LC(data).zip(zip_data).force() == expected
 
 
 class TestForce:
 
+    @pytest.mark.parametrize(['data', 'expected'],
+                             [([], True),
+                              ([0, None], False),
+                              ([1, 0], False),
+                              ([True, 'a'], True)])
+    def test_all(self, data, expected):
+        assert LC(data).force.all() == expected
+
+    @pytest.mark.parametrize(['data', 'expected'],
+                             [([], False),
+                              ([0, None], False),
+                              ([1, 0], True),
+                              ([True, 'a'], True)])
+    def test_any(self, data, expected):
+        assert LC(data).force.any() == expected
+
     def test_force(self):
-        assert LambdaChain((1, 2, 3)).force() == [1, 2, 3]
+        assert LC((1, 2, 3)).force() == [1, 2, 3]
+
+    def test_foreach(self):
+        def print(a, b):
+            result.append((a, b))
+
+        result = []
+        LC([1, 2, 3]).force.foreach(print, b=0)
+        assert result == [(1, 0), (2, 0), (3, 0)]
 
     @pytest.mark.parametrize(['data', 'separator', 'expected'],
                              [(['a', 'b', 'c'], '.', 'a.b.c')])
     def test_join(self, data, separator, expected):
-        assert LambdaChain(data).force.join(separator) == expected
+        assert LC(data).force.join(separator) == expected
 
     @pytest.mark.parametrize(['data', 'initial', 'expected'],
                              [([1, 2, 3], 'a', 'aaaaaa'),
                               ([4, 5, 6], 1, 120)])
     def test_product(self, data, initial, expected):
-        assert LambdaChain(data).force.product(initial) == expected
+        assert LC(data).force.product(initial) == expected
 
     @pytest.mark.parametrize(['data', 'initial', 'expected'],
                              [([2, 4, 6], 3, 15),
                               ({0, 10, -3}, -2, 5)])
     def test_sum(self, data, initial, expected):
-        assert LambdaChain(data).force.sum(initial) == expected
+        assert LC(data).force.sum(initial) == expected

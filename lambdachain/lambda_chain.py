@@ -3,20 +3,22 @@ from functools import reduce, partial
 from inspect import signature
 from itertools import filterfalse
 from types import BuiltinFunctionType
-from typing import Generic, Iterable, Any, Callable, Tuple, Generator, Union, List
+from typing import Generic, Iterable, Any, Callable, Tuple, Generator, Union, List, Mapping
 
-from lambdachain.functions import T, U, fold, unique, unique_by, rebind, foldc, groupby_, enumerate_
+from lambdachain.functions import T, U, fold, unique, unique_by, rebind, foldc, groupby_, enumerate_, map_, identity, \
+    flatten
 from lambdachain.lambda_identifier import Lambda as _, LambdaIdentifier
 from lambdachain.utils import assert_callable, assert_genexpr, PY37
 
 sum_ = sum
+filter_ = filter
 
 
 class LambdaChain(Generic[T]):
 
     __slots__ = ['_it', 'force']
 
-    def __init__(self, it: Iterable[T]):
+    def __init__(self, it):
         self._it = it
         self.force = ForceProxy(it)
 
@@ -38,7 +40,7 @@ class LambdaChain(Generic[T]):
         The given generator expression is applied to whatever is contained in the ``LambdaChain`` at that point. In
         this way, generator expressions can be parametrised in terms of the source iterable.
 
-            >>> LambdaChain([0, 2.0, 'str', ['in_list']]).apply(x * 2 for x in _).force()
+            >>> LC([0, 2.0, 'str', ['in_list']]).apply(x * 2 for x in _).force()
             [0, 4.0, 'strstr', ['in_list', 'in_list']]
         """
 
@@ -63,12 +65,12 @@ class LambdaChain(Generic[T]):
 
         Combine an iterable with a counter that starts at 2 and increments by 2 each iteration.
 
-            >>> LambdaChain(['a', 'b', 'c']).enumerate(start=2, step=2)
+            >>> LC(['a', 'b', 'c']).enumerate(start=2, step=2)
             [(2, 'a'), (4, 'b'), (6, 'c')]
         """
         return LambdaChain(enumerate_(self._it, start, step))
 
-    def filter(self, f: Callable[[T], Any]) -> 'LambdaChain[T]':
+    def filter(self, f: Callable[[T], Any] = identity) -> 'LambdaChain[T]':
         """
         Remove the elements of the current iterable that, when passed into a function, return a value that evaluates
         to ``False``. Analogous to the builtin function ``filter``.
@@ -81,11 +83,14 @@ class LambdaChain(Generic[T]):
 
         Filter out all non-positive elements.
 
-            >>> LambdaChain([2, 0, -3, 5, 7]).filter(_ > 0).force()
+            >>> LC([2, 0, -3, 5, 7]).filter(_ > 0).force()
             [2, 5, 7]
         """
         assert_callable(f)
-        return LambdaChain(filter(f, self._it))
+        return LambdaChain(filter_(f, self._it))
+
+    def flatten(self) -> 'LambdaChain':
+        return LambdaChain(flatten(self._it))
 
     def groupby(self, key: Callable[[T], Any], combine: bool = True) -> 'LambdaChain[Tuple[Any, List[T]]]':
         """Group elements from the current iterable that compare equal after having ``key`` applied to them, yielding
@@ -106,22 +111,23 @@ class LambdaChain(Generic[T]):
         Group by parity (odd/even) and convert to a ``list``. Notice that in the output, there are only two groups; one
         for odd numbers and one for even ones.::
 
-            >>> chain = LambdaChain([1, 3, 2, 2, 5, 3, 4, 6]).groupby(_ % 2).force()
+            >>> chain = LC([1, 3, 2, 2, 5, 3, 4, 6]).groupby(_ % 2).force()
             [(1, [1, 3, 5, 3]), (0, [2, 2, 4, 6])]
 
         Create the same LambdaChain as above; but this time, pass ``combine=False``. This time, the output is separated
         into runs of odd and even numbers in the same order as the original.::
 
-            >>> LambdaChain([1, 3, 2, 2, 5, 3, 4, 6]).groupby(_ % 2, combine=False).force()
+            >>> LC([1, 3, 2, 2, 5, 3, 4, 6]).groupby(_ % 2, combine=False).force()
             [(1, [1, 3]), (0, [2, 2]), (1, [5, 3]), (0, [4, 6])]
         """
         assert_callable(key)
         return LambdaChain(groupby_(self._it, key, combine))
 
-    def map(self, f: Callable[[T], U]) -> 'LambdaChain[U]':
+    def map(self, f: Callable[[T], U], **kwargs) -> 'LambdaChain[U]':
         """Apply a function to each element of the current iterable. Analogous to the builtin function ``map``.
 
         :param f: The function to apply.
+        :param kwargs: Additional keyword arguments to pass to ``f``.
 
         :return: A new ``LambdaChain`` object with ``f`` applied.
 
@@ -129,16 +135,16 @@ class LambdaChain(Generic[T]):
 
         Multiply each element of an iterable by 2.
 
-            >>> LambdaChain([1, 5, 3, 9]).map(_ * 2).force()
+            >>> LC([1, 5, 3, 9]).map(_ * 2).force()
             [2, 10, 6, 18]
 
         Take the length of an iterable of strings.
 
-            >>> LambdaChain(['apple', 'pie', 'surprise']).map(len).force()
+            >>> LC(['apple', 'pie', 'surprise']).map(len).force()
             [5, 3, 8]
         """
         assert_callable(f)
-        return LambdaChain(map(f, self._it))
+        return LambdaChain(map_(f, self._it, **kwargs))
 
     def persist(self) -> 'LambdaChain[T]':
         """Convert the current iterable to a ``list``, allowing it to be used in multiple operations.
@@ -159,7 +165,7 @@ class LambdaChain(Generic[T]):
 
         Filter out all positive elements.
 
-            >>> LambdaChain([2, 0, -3, 5, 7]).reject(_ > 0).force()
+            >>> LC([2, 0, -3, 5, 7]).reject(_ > 0).force()
             [0, -3]
         """
         assert_callable(f)
@@ -168,7 +174,7 @@ class LambdaChain(Generic[T]):
     def unique(self, hashable: bool = True) -> 'LambdaChain[T]':
         """
         Remove repeated elements from the current iterable. If ``hashable=False``, a non-hash-based approach will be
-        used, which is a lot slower when the values are in fact hashable, but a fair bit faster if they are not. When
+        used, which is a lot slower when all the values are in fact hashable, but reasonably faster if they are not. When
         in doubt, use the default setting.
 
         :param hashable: Whether all elements of the current iterable are hashable.
@@ -179,12 +185,12 @@ class LambdaChain(Generic[T]):
 
         Take unique values of a ``list``. Since it contains only hashable ``ints``, there is no need to set
         ``hashable = False``.
-            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique().force()
+            >>> LC([3, 0, 5, 7, 0, 4, 3, 4]).unique().force()
             [3, 0, 5, 7, 4]
 
         In this ``list``, each element is itself a ``list`` and therefore unhashable. Even without passing
         ``hashable=False``, no errors are produced. However, passing ``hashable=True`` will speed up computation.
-            >>> LambdaChain([[3], [0], [5], [7], [0], [4], [3], [4]]).unique().force()
+            >>> LC([[3], [0], [5], [7], [0], [4], [3], [4]]).unique().force()
             [[3], [0], [5], [7], [4]]
         """
         return LambdaChain(unique(self._it, hashable))
@@ -192,8 +198,8 @@ class LambdaChain(Generic[T]):
     def unique_by(self, key: Callable[[T], Any], hashable: bool = True) -> 'LambdaChain[T]':
         """
         Remove elements from the current iterable that compare equal after having ``key`` applied to them. If
-        ``hashable = False``, a non-hash-based approach will be used, which is a lot slower when the keys are in fact
-        hashable, but a fair bit faster if they are not. When in doubt, use the default setting.
+        ``hashable = False``, a non-hash-based approach will be used, which is a lot slower when all the keys are in
+         fact hashable, but reasonably faster if they are not. When in doubt, use the default setting.
 
         :param key: The function to apply to the values in the current iterable before comparing for equality.
         :param hashable: Whether all elements of the current iterable are hashable under ``key``.
@@ -203,33 +209,47 @@ class LambdaChain(Generic[T]):
         :Examples:
 
         Take the unique values of a ``list`` based on their remainder when divided by 3.
-            >>> LambdaChain([3, 0, 5, 7, 0, 4, 3, 4]).unique_by(_ % 3).force()
+            >>> LC([3, 0, 5, 7, 0, 4, 3, 4]).unique_by(_ % 3).force()
             [3, 5, 7]
 
         Take the first string with a given length for each unique length value.
-            >>> LambdaChain(['apple', 'scream', 'white', 'bay', 'pea']).unique_by(len).force()
+            >>> LC(['apple', 'scream', 'white', 'bay', 'pea']).unique_by(len).force()
             ['apple', 'scream', 'bay']
         """
         assert_callable(key)
         return LambdaChain(unique_by(self._it, key, hashable))
 
-    def zip(self, other: Iterable[U]) -> 'LambdaChain[Tuple[T, U]]':
+    def without(self, other: Iterable[T]) -> 'LambdaChain[T]':
         """
-        Combine elements from the current iterable with elements from another iterable in the same order to yield
-        ``tuples`` of the combination. Analogous to ``zip``.
+        Remove elements from the current iterable that exist in ``other``.
 
-        :param other: The iterable to combine with the current iterable.
+        :param other: The iterable to check for values to remove from the current iterable.
 
-        :return: A new ``LambdaChain`` object with the elements of ``other`` zipped in.
+        :return: A new ``LambdaChain`` object without the elements in ``other``.
+        """
+
+    def zip(self, *other: Iterable[U]) -> 'LambdaChain[Tuple[T, U]]':
+        """
+        Combine elements from the current iterable with elements from other iterables in the same order to yield
+        ``tuples`` of the combination, for as long as all passed iterables are not exhausted. Analogous to ``zip``.
+
+        :param other: The iterables to combine with the current iterable.
+
+        :return: A new ``LambdaChain`` object with the elements of each iterable in ``other`` zipped in.
 
         :Examples:
 
         Combine the contents of two ``lists`` together.
 
-            >>> LambdaChain(['alpha', 'bravo', 'charlie']).zip([True, True, False]).force()
+            >>> LC(['alpha', 'bravo', 'charlie']).zip([True, True, False]).force()
             [('alpha', True), ('bravo', True), ('charlie', False)]
+
+        Combine the contents of three ``lists`` together.
+
+            >>> LC([1, 2, 3]).zip(['a', 'b', 'c'], [False, True, False]).force()
+            [(1, 'a', False), (2, 'b', True), (3, 'c', False)]
         """
-        return LambdaChain(zip(self._it, iter(other)))
+        return LambdaChain(zip(self._it, *(iter(other_iter) for other_iter in other)))
 
 
 class ForceProxy(Generic[T]):
@@ -239,6 +259,16 @@ class ForceProxy(Generic[T]):
 
     def __call__(self, f: Callable[[Iterable[T]], U] = list) -> U:
         return f(self._it)
+
+    def all(self):
+        """Return ``True`` if all elements in the current iterable evaluate to ``True``. This means that an empty
+        iterable will also evaluate to ``True``."""
+        return all(self._it)
+
+    def any(self):
+        """Return ``True`` if at least one element in the current iterable evaluates to ``True``. This means that an
+        empty iterable will evaluate to ``False``."""
+        return any(self._it)
 
     def fold(self, f: Callable[[U, T], U], initial_value: U) -> U:
         """Apply a function to an accumulator and successive values of the current iterable, with the accumulator
@@ -258,7 +288,7 @@ class ForceProxy(Generic[T]):
         Multiply all the elements of a ``list`` together, starting with an initial value of -1.
 
             >>> from operator import mul
-            >>> LambdaChain([3, 8, -2, 6]).fold(mul, -1)
+            >>> LC([3, 8, -2, 6]).fold(mul, -1)
             288
         """
         assert_callable(f)
@@ -293,6 +323,25 @@ class ForceProxy(Generic[T]):
         assert_callable(f)
         return foldc(uncurry(f), self._it)
 
+    def foreach(self, f: Callable[[T, Mapping[str, Any]], None], **kwargs):
+        """Apply a side effect-causing function to each element of the current iterable.
+
+        :param f: The function to apply.
+        :param kwargs: Additional keyword arguments to pass to ``f``.
+
+        :Examples:
+
+        Print each element of an iterable.
+
+            >>> LC([1, 5, 3, 9]).force.foreach(print)
+            1
+            5
+            3
+            9"""
+        assert_callable(f)
+        for element in self._it:
+            f(element, **kwargs)
+
     def join(self, separator: str) -> str:
         """Combine the strings contained in the current iterable, separated by ``separator``. Analogous to ``str.join``.
 
@@ -304,7 +353,7 @@ class ForceProxy(Generic[T]):
 
         Combine a number of strings with ``, '`` separating them.
 
-            >>> LambdaChain(['apple', 'banana', 'cucumber']).force.join(', ')
+            >>> LC(['apple', 'banana', 'cucumber']).force.join(', ')
             'apple, banana, cucumber'
         """
         return separator.join(self._it)
@@ -321,7 +370,7 @@ class ForceProxy(Generic[T]):
 
         Take the product of some data with the default initial value, 1.
 
-            >>> LambdaChain([3, 6, -2]).force.product()
+            >>> LC([3, 6, -2]).force.product()
             -36
         """
         return fold(lambda x, y: x * y, self._it, initial_value)
@@ -337,7 +386,7 @@ class ForceProxy(Generic[T]):
 
         Take the sum of some data with the default initial value, 0.
 
-            >>> LambdaChain([5, 10, 15, 20]).force.sum()
+            >>> LC([5, 10, 15, 20]).force.sum()
             50
         """
         return sum_(self._it, initial_value)
